@@ -23,7 +23,7 @@ end
 
 
 function logQ(x, M::StochasticModel)
-    sum(logQi(x, i, Λ, M.T, M.pseed[i], M.autoinf[i], M.inf[i]) for i in eachindex(x))
+    sum(logQi(x, i, M.Λ, M.T, M.pseed[i], M.autoinf[i], M.inf[i]) for i in eachindex(x))
 end
 
 
@@ -34,7 +34,7 @@ function descend!(Mp, O; M = copy(Mp),
         descender = AdamDescender(M.θ, 1e-3),
         θmin = 1e-5,
         θmax = 1-1e-5)
-    N = size(Λ,2)
+    N = size(M.Λ,2)
     nt = Threads.nthreads()
     X = [zeros(N) for ti=1:nt]
     dθ = [zero(M.θ) for ti=1:nt]
@@ -74,7 +74,7 @@ end
 
 function gradient!(dθ, x, M::StochasticModel{TT,TH,G,A,B,C}) where {TT,TH,G,A,B<:AbstractVector{<:GaussianRate},C<:AbstractVector{<:GaussianRate}}
     for i=1:size(dθ, 2)
-        ForwardDiff.gradient!((@view dθ[:,i]), v->logQi(x, i, Λ, M.T, v[1], GaussianRate(v[2:4]...), GaussianRate(v[5:7]...)), θ[:,i])
+        ForwardDiff.gradient!((@view dθ[:,i]), v->logQi(x, i, M.Λ, M.T, v[1], GaussianRate(v[2:4]...), GaussianRate(v[5:7]...)), M.θ[:,i])
     end
 end
 

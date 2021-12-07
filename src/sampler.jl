@@ -1,12 +1,16 @@
-using DataStructures, ProgressMeter
+using DataStructures, ProgressMeter, SparseArrays
 
 export Sampler, prior, post
 
+
+∂(Λ,i) = @view Λ.rowval[nzrange(Λ,i)]
+
 function Sampler(M::StochasticModel)
-    N = size(Λ,1)
+    N = size(M.Λ,1)
     s = falses(N)
     Q = PriorityQueue{Int,Float64}()
     function sample!(x)
+        @assert N == length(x)
         empty!(Q)
         x .= M.T
         s .= false
@@ -18,7 +22,7 @@ function Sampler(M::StochasticModel)
             s[i] && continue
             s[i] = true
             x[i] = t
-            for j ∈ ∂(Λ,i)
+            for j ∈ ∂(M.Λ,i)
                 if !s[j]
                     Q[j] = min(Q[j], infect(M.inf[j], t))
                 end
@@ -30,6 +34,7 @@ end
 
 
 function prior(sample!, numsamples=10^5)
+    N = sample!.N
     x = zeros(N);
     stats = zeros(N, numsamples)
     @showprogress for i=1:numsamples
@@ -39,7 +44,7 @@ function prior(sample!, numsamples=10^5)
     stats
 end
 
-function post(Mp, O; numsamples=10^4, stats = zeros(N, numsamples))
+function post(Mp, O; numsamples=10^4, stats = zeros(size(Mp.Λ,1), numsamples))
     sample! = Sampler(Mp)
     N = size(Mp.Λ,1)
     x = zeros(N);
