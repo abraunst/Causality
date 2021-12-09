@@ -72,4 +72,4 @@ function infect(m::MaskedRate, tj)
 end
 
 Base.:*(m::MaskedRate, g::RateContinuous) = MaskedRate(m.rate*g, m.intervals)
-Base.:*(m::MaskedRate, n::MaskedRate) = MaskedRate(m.rate*n.rate, m.intervals ∩ n.interfals)
+Base.:*(m::MaskedRate, n::MaskedRate) = MaskedRate(m.rate*n.rate, m.intervals ∩ n.intervals)
