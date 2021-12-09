@@ -68,7 +68,7 @@ function descend!(Mp, O; M = copy(Mp),
         any(isnan.(θ)) && (@show t; return M)
         ProgressMeter.next!(pr, showvalues=[(:F,sum(avF))])
     end
-    M
+    sum(avF)
 end
 
 
