@@ -3,7 +3,6 @@ using DataStructures, ProgressMeter, SparseArrays
 export Sampler, prior, post
 
 
-∂(Λ,i) = @view Λ.rowval[nzrange(Λ,i)]
 
 function Sampler(M::StochasticModel)
     N = size(M.Λ,1)
@@ -15,16 +14,17 @@ function Sampler(M::StochasticModel)
         x .= M.T
         s .= false
         for i in eachindex(x)
-            Q[i] = min(M.T, rand() < M.pseed[i] ? zero(M.T) : infect(M.autoinf[i], zero(M.T)))
+            ind = individual(M, i)
+            Q[i] = min(M.T, rand() < ind.pseed ? zero(M.T) : infect(ind.autoinf, zero(M.T)))
         end
         while !isempty(Q)
             i, t = dequeue_pair!(Q)
             s[i] && continue
             s[i] = true
             x[i] = t
-            for j ∈ ∂(M.Λ,i)
+            for (j,rij) ∈ neighbors(M,i)
                 if !s[j]
-                    Q[j] = min(Q[j], infect(M.inf[j], t))
+                    Q[j] = min(Q[j], infect(shift(individual(M,i).out,t) * rij * individual(M,j).inf, t))
                 end
             end
         end

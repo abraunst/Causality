@@ -1,29 +1,30 @@
-import ForwardDiff
+import Enzyme, ForwardDiff
 
 
 export descend!, logQ
 
 
-function logQi(x, i, Λ, T, pseed, autoinf, inf)
-    iszero(x[i]) && return log(pseed)
-    s = zero(pseed)
-    s += log(1-pseed)
-    s -= cumulated(autoinf, x[i])
-    s2 = density(autoinf, x[i])
-    ci = cumulated(inf, x[i])
-    di = density(inf, x[i])
-    for j ∈ ∂(Λ,i)
-        if x[i] > x[j]
-            s -= ci - cumulated(inf, x[j])
-            s2 += di
+function logQi(M, i, ind, x)
+    iszero(x[i]) && return log(ind.pseed)
+    s = log(1-ind.pseed)
+    s -= cumulated(ind.autoinf, x[i])
+    s2 = density(ind.autoinf, x[i])
+    for (j,rji) ∈ neighbors(M, i)
+        if x[j] < x[i]
+            inf = ind.inf * rji * shift(individual(M,j).out,x[j])
+            s -= cumulated(inf, x[i]) - cumulated(inf, x[j])
+            s2 += density(inf, x[i])
         end
     end
-    return x[i] < T ? s + log(s2) : s
+    if x[i] < M.T
+        s += log(s2)
+    end
+    return s
 end
 
 
 function logQ(x, M::StochasticModel)
-    sum(logQi(x, i, M.Λ, M.T, M.pseed[i], M.autoinf[i], M.inf[i]) for i in eachindex(x))
+    sum(logQi(M, i, individual(M,i), x) for i in eachindex(x); init=0.0)
 end
 
 
@@ -72,9 +73,10 @@ function descend!(Mp, O; M = copy(Mp),
 end
 
 
-function gradient!(dθ, x, M::StochasticModel{TT,TH,G,A,B,C}) where {TT,TH,G,A,B<:AbstractVector{<:GaussianRate},C<:AbstractVector{<:GaussianRate}}
+function gradient!(dθ, x, M::StochasticModel)
     for i=1:size(dθ, 2)
-        ForwardDiff.gradient!((@view dθ[:,i]), v->logQi(x, i, M.Λ, M.T, v[1], GaussianRate(v[2:4]...), GaussianRate(v[5:7]...)), M.θ[:,i])
+        # Enzyme.autodiff(θi->logQi(M, i, individual(M, θi), x), Enzyme.Duplicated((@view M.θ[:,i]), (@view dθ[:,i])))
+        ForwardDiff.gradient!((@view dθ[:,i]), θi->logQi(M, i, individual(M, θi), x), @view M.θ[:,i])
     end
 end
 
