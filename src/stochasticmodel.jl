@@ -25,14 +25,16 @@ struct GenericStaticSM{I,Rout} <: StochasticModel
     T::Float64  #epidemic time
     θ::Matrix{Float64}  #parameters
     Λ::SparseMatrixCSC{Bool,Int}  #contact graph
+    Λp::SparseMatrixCSC{Bool,Int}  #transposed contact graph
     out::Rout  #outgoing infection
 end
 
-GenericStaticSM{I}(T,θ,Λ,out::Rout) where {I,Rout} = GenericStaticSM{I,Rout}(T,θ,Λ,out)
+GenericStaticSM{I}(T,θ,Λ,out::Rout) where {I,Rout} = GenericStaticSM{I,Rout}(T,θ,Λ,sparse(Λ'),out)
 
 individual(M::GenericStaticSM{I}, θi) where I = I(θi, M.out)
 individual(M::GenericStaticSM, i::Int) = individual(M, @view M.θ[:,i])
-neighbors(M::GenericStaticSM, i::Int) = ((M.Λ.rowval[k], UnitRate()) for k ∈ nzrange(M.Λ,i))
+in_neighbors(M::GenericStaticSM, i::Int) = ((M.Λ.rowval[k], UnitRate()) for k ∈ nzrange(M.Λ,i))
+out_neighbors(M::GenericStaticSM, i::Int) = ((M.Λp.rowval[k], UnitRate()) for k ∈ nzrange(M.Λp,i))
 
 
 # GenericDynamicSM: similar but with per link infection rates (typically just masks)
