@@ -42,8 +42,8 @@ out_neighbors(M::GenericStaticSM, i::Int) = ((M.Λp.rowval[k], UnitRate()) for k
 struct GenericDynamicSM{I,Rout,VR} <: StochasticModel
     T::Float64
     θ::Matrix
-    Λ::SparseMatrixCSC{Bool, Int}  #adjacency
-    Λp::SparseMatrixCSC{Bool, Int} #transposed adjecency
+    Λ::SparseMatrixCSC{Bool, Int}  #contact graph
+    Λp::SparseMatrixCSC{Bool, Int} #transposed contact graph
     out::Rout
     V::VR
 end

@@ -22,7 +22,7 @@ function Sampler(M::StochasticModel)
             s[i] && continue
             s[i] = true
             x[i] = t
-            for (j,rij) ∈ neighbors(M,i)
+            for (j,rij) ∈ out_neighbors(M,i)
                 if !s[j]
                     Q[j] = min(Q[j], infect(shift(individual(M,i).out,t) * rij * individual(M,j).inf, t))
                 end
