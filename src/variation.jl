@@ -9,7 +9,7 @@ function logQi(M, i, ind, x)
     s = log(1-ind.pseed)
     s -= cumulated(ind.autoinf, x[i])
     s2 = density(ind.autoinf, x[i])
-    for (j,rji) ∈ neighbors(M, i)
+    for (j,rji) ∈ in_neighbors(M, i)
         if x[j] < x[i]
             inf = ind.inf * rji * shift(individual(M,j).out,x[j])
             s -= cumulated(inf, x[i]) - cumulated(inf, x[j])
