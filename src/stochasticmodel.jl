@@ -40,13 +40,15 @@ neighbors(M::GenericStaticSM, i::Int) = ((M.Λ.rowval[k], UnitRate()) for k ∈ 
 struct GenericDynamicSM{I,Rout,VR} <: StochasticModel
     T::Float64
     θ::Matrix
-    Λ::SparseMatrixCSC{Bool, Int}
+    Λ::SparseMatrixCSC{Bool, Int}  #adjacency
+    Λp::SparseMatrixCSC{Bool, Int} #transposed adjecency
     out::Rout
     V::VR
 end
 
-GenericDynamicSM{I}(T,θ,Λ,out::Rout,V::VR) where {I,Rout,VR} = GenericDynamicSM{I,Rout,VR}(T,θ,Λ,out,V)
+GenericDynamicSM{I}(T,θ,Λ,out::Rout,V::VR) where {I,Rout,VR} = GenericDynamicSM{I,Rout,VR}(T,θ,Λ,Λ',out,V)
 
 individual(M::GenericDynamicSM{I}, θi) where I = I(θi, M.out)
 individual(M::GenericDynamicSM, i::Int) = individual(M, @view M.θ[:,i])
-neighbors(M::GenericDynamicSM, i::Int) = ((M.Λ.rowval[k], M.V[k]) for k ∈ nzrange(M.Λ,i))
+in_neighbors(M::GenericDynamicSM, i::Int) = ((M.Λ.rowval[k], M.V[k]) for k ∈ nzrange(M.Λ,i))
+out_neighbors(M::GenericDynamicSM, i::Int) = ((M.Λp.rowval[k], M.V[k]) for k ∈ nzrange(M.Λp,i))
