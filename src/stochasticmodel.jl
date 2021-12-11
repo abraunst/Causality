@@ -25,16 +25,14 @@ struct GenericStaticSM{I,Rout} <: StochasticModel
     T::Float64  #epidemic time
     θ::Matrix{Float64}  #parameters
     Λ::SparseMatrixCSC{Bool,Int}  #contact graph
-    Λp::SparseMatrixCSC{Bool,Int}  #transposed contact graph
     out::Rout  #outgoing infection
 end
 
-GenericStaticSM{I}(T,θ,Λ,out::Rout) where {I,Rout} = GenericStaticSM{I,Rout}(T,θ,Λ,sparse(Λ'),out)
+GenericStaticSM{I}(T,θ,Λ,out::Rout) where {I,Rout} = GenericStaticSM{I,Rout}(T,θ,Λ,out)
 
 individual(M::GenericStaticSM{I}, θi) where I = I(θi, M.out)
 individual(M::GenericStaticSM, i::Int) = individual(M, @view M.θ[:,i])
-in_neighbors(M::GenericStaticSM, i::Int) = ((M.Λ.rowval[k], UnitRate()) for k ∈ nzrange(M.Λ,i))
-out_neighbors(M::GenericStaticSM, i::Int) = ((M.Λp.rowval[k], UnitRate()) for k ∈ nzrange(M.Λp,i))
+neighbors(M::GenericStaticSM, i::Int) = ((M.Λ.rowval[k], UnitRate()) for k ∈ nzrange(M.Λ,i))
 
 
 # GenericDynamicSM: similar but with per link infection rates (typically just masks)
@@ -43,14 +41,21 @@ struct GenericDynamicSM{I,Rout,VR} <: StochasticModel
     T::Float64
     θ::Matrix
     Λ::SparseMatrixCSC{Bool, Int}  #contact graph
-    Λp::SparseMatrixCSC{Bool, Int} #transposed contact graph
+    Λ2::SparseMatrixCSC{Int, Int} #transposed contact graph
     out::Rout
     V::VR
 end
 
-GenericDynamicSM{I}(T,θ,Λ,out::Rout,V::VR) where {I,Rout,VR} = GenericDynamicSM{I,Rout,VR}(T,θ,Λ,(sparse(Λ')),out,V)
+#GenericDynamicSM{I}(T,θ,Λ,out::Rout,V::VR) where {I,Rout,VR} = GenericDynamicSM{I,Rout,VR}(T,θ,Λ,(sparse(Λ')),out,V)
+
+
+function GenericDynamicSM{I}(T,θ,G,out::Rout,V::VR) where {I,Rout,VR}
+    G1=SparseMatrixCSC(G.m, G.n, G.colptr, G.rowval, collect(1:nnz(G)))
+    G2=sparse(G1')
+    GenericDynamicSM{I,Rout,VR}(T,θ,G,G2,out,V)
+end
 
 individual(M::GenericDynamicSM{I}, θi) where I = I(θi, M.out)
 individual(M::GenericDynamicSM, i::Int) = individual(M, @view M.θ[:,i])
 in_neighbors(M::GenericDynamicSM, i::Int) = ((M.Λ.rowval[k], M.V[k]) for k ∈ nzrange(M.Λ,i))
-out_neighbors(M::GenericDynamicSM, i::Int) = ((M.Λp.rowval[k], M.V[k]) for k ∈ nzrange(M.Λp,i))
+out_neighbors(M::GenericDynamicSM, i::Int) = ((M.Λ2.rowval[k], M.V[k]) for k ∈ nzrange(M.Λ2,i))
