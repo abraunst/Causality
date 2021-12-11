@@ -59,4 +59,4 @@ end
 individual(M::GenericDynamicSM{I}, θi) where I = I(θi, M.out)
 individual(M::GenericDynamicSM, i::Int) = individual(M, @view M.θ[:,i])
 in_neighbors(M::GenericDynamicSM, i::Int) = ((M.Λ.rowval[k], M.V[k]) for k ∈ nzrange(M.Λ,i))
-out_neighbors(M::GenericDynamicSM, i::Int) = ((M.Λ2.rowval[k], M.V[k]) for k ∈ nzrange(M.Λ2,i))
+out_neighbors(M::GenericDynamicSM, i::Int) = ((M.Λ2.rowval[k], M.V[M.Λ2.nzval[k]]) for k ∈ nzrange(M.Λ2,i))
