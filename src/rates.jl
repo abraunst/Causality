@@ -91,9 +91,9 @@ function infect(m::MaskedRate, tj)
     return Inf
 end
 
-Base.:*(m::MaskedRate, g::RateContinuous) = MaskedRate(m.rate*g, m.intervals)
-Base.:*(g::RateContinuous, m::MaskedRate) = MaskedRate(m.rate*g, m.intervals)
-Base.:*(m::MaskedRate, n::MaskedRate) = MaskedRate(m.rate*n.rate, m.intervals ∩ n.intervals)
+Base.:*(m::MaskedRate, g::RateContinuous) = MaskedRate(m.rate*g, m.mask)
+Base.:*(g::RateContinuous, m::MaskedRate) = MaskedRate(m.rate*g, m.mask)
+Base.:*(m::MaskedRate, n::MaskedRate) = MaskedRate(m.rate*n.rate, m.mask ∩ n.mask)
 
 struct UnitRate <: RateContinuous end
 
