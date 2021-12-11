@@ -32,9 +32,7 @@ GenericStaticSM{I}(T,θ,Λ,out::Rout) where {I,Rout} = GenericStaticSM{I,Rout}(T
 
 individual(M::GenericStaticSM{I}, θi) where I = I(θi, M.out)
 individual(M::GenericStaticSM, i::Int) = individual(M, @view M.θ[:,i])
-
 neighbors(M::GenericStaticSM, i::Int) = ((M.Λ.rowval[k], UnitRate()) for k ∈ nzrange(M.Λ,i))
-
 
 
 # GenericDynamicSM: similar but with per link infection rates (typically just masks)
@@ -46,6 +44,8 @@ struct GenericDynamicSM{I,Rout,VR} <: StochasticModel
     out::Rout
     V::VR
 end
+
+GenericDynamicSM{I}(T,θ,Λ,out::Rout,V::VR) where {I,Rout,VR} = GenericDynamicSM{I,Rout,VR}(T,θ,Λ,out,V)
 
 individual(M::GenericDynamicSM{I}, θi) where I = I(θi, M.out)
 individual(M::GenericDynamicSM, i::Int) = individual(M, @view M.θ[:,i])
