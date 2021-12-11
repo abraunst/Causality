@@ -46,7 +46,7 @@ struct GenericDynamicSM{I,Rout,VR} <: StochasticModel
     V::VR
 end
 
-GenericDynamicSM{I}(T,θ,Λ,out::Rout,V::VR) where {I,Rout,VR} = GenericDynamicSM{I,Rout,VR}(T,θ,Λ,Λ',out,V)
+GenericDynamicSM{I}(T,θ,Λ,out::Rout,V::VR) where {I,Rout,VR} = GenericDynamicSM{I,Rout,VR}(T,θ,Λ,(sparse(Λ')),out,V)
 
 individual(M::GenericDynamicSM{I}, θi) where I = I(θi, M.out)
 individual(M::GenericDynamicSM, i::Int) = individual(M, @view M.θ[:,i])
