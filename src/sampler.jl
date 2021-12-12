@@ -33,7 +33,7 @@ function Sampler(M::StochasticModel)
 end
 
 
-function prior(sample!, numsamples=10^5)
+function prior(sample!; numsamples=10^5)
     N = sample!.N
     x = zeros(N);
     stats = zeros(N, numsamples)
