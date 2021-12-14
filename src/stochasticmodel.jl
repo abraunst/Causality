@@ -19,6 +19,23 @@ end
 Individual{Rauto, Rinf}(θi, rout) where {Rauto, Rinf} = @views Individual(θi[1], Rauto(θi[2:1+nparams(Rauto)]...), Rinf(θi[2+nparams(Rauto):1+nparams(Rauto)+nparams(Rinf)]...), rout)
 
 
+
+# An Individual SEIR with pseed, autoinf, inf, out, latency and recovery. Note that out infection is fixed
+
+struct IndividualSEIR{T,Rauto,Rinf,Rout,Rlat,Rrec}
+    pseed::T
+    autoinf::Rauto
+    inf::Rinf
+    out::Rout
+    latency::Rlat
+    recov::Rrec
+end
+
+
+Individual{Rauto, Rinf, Rlat, Rrec}(θi, rout) where {Rauto, Rinf, Rlat, Rrec} = @views Individual(θi[1], Rauto(θi[2:1+nparams(Rauto)]...), Rinf(θi[2+nparams(Rauto):1+nparams(Rauto)+nparams(Rinf)]...), rout,
+Rlat(θi[2+nparams(Rauto)+nparams(Rinf):1+nparams(Rauto)+nparams(Rinf)+nparams(Rlat)]...), 
+Rrec(θi[2+nparams(Rauto)+nparams(Rinf)+nparams(Rlat):1+nparams(Rauto)+nparams(Rinf)+nparams(Rlat)+nparams(Rrec)]...))
+
 # GenericStaticSM: here out infection is common to all individuals, no per link infection
 
 struct GenericStaticSM{I,Rout} <: StochasticModel
@@ -27,6 +44,8 @@ struct GenericStaticSM{I,Rout} <: StochasticModel
     Λ::SparseMatrixCSC{Bool,Int}  #contact graph
     out::Rout  #outgoing infection
 end
+
+
 
 GenericStaticSM{I}(T,θ,Λ,out::Rout) where {I,Rout} = GenericStaticSM{I,Rout}(T,θ,Λ,out)
 
