@@ -9,7 +9,7 @@ abstract type StochasticModel end
 
 # An Individual with pseed, autoinf, inf and out. Note that out infection is fixed
 
-struct Individual{T,Rauto,Rinf,Rout}
+struct IndividualSI{T,Rauto,Rinf,Rout}
     pseed::T
     autoinf::Rauto
     inf::Rinf
@@ -32,7 +32,7 @@ struct IndividualSEIR{T,Rauto,Rinf,Rout,Rlat,Rrec}
 end
 
 
-Individual{Rauto, Rinf, Rlat, Rrec}(θi, rout) where {Rauto, Rinf, Rlat, Rrec} = @views Individual(θi[1], Rauto(θi[2:1+nparams(Rauto)]...), Rinf(θi[2+nparams(Rauto):1+nparams(Rauto)+nparams(Rinf)]...), rout,
+IndividualSEIR{Rauto, Rinf, Rlat, Rrec}(θi, rout) where {Rauto, Rinf, Rlat, Rrec} = @views IndividualSEIR(θi[1], Rauto(θi[2:1+nparams(Rauto)]...), Rinf(θi[2+nparams(Rauto):1+nparams(Rauto)+nparams(Rinf)]...), rout,
 Rlat(θi[2+nparams(Rauto)+nparams(Rinf):1+nparams(Rauto)+nparams(Rinf)+nparams(Rlat)]...), 
 Rrec(θi[2+nparams(Rauto)+nparams(Rinf)+nparams(Rlat):1+nparams(Rauto)+nparams(Rinf)+nparams(Rlat)+nparams(Rrec)]...))
 
