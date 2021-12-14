@@ -45,8 +45,8 @@ function Sampler(M::GenericDynamicSM{<:IndividualSEIR})
         for i in eachindex(x)
             ind = individual(M, i)
             tE = min(M.T, rand() < ind.pseed ? zero(M.T) : infect(ind.autoinf, zero(M.T)))
-            tI = min(M.T, )
-            tR = min(M.T, )
+            tI = min(M.T, infect(ind.latency,tE))
+            tR = min(M.T, infect(ind.recov,tI))
             Q[i] = [tE, tI, tR]
         end
         while !isempty(Q)
