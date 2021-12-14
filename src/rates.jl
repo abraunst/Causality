@@ -26,7 +26,7 @@ function cumulated(g::GaussianRate, t)
     a*c*0.5*sqrt(π)*(erfc(-(t-b)/c)-erfc(b/c))
 end
 
-function infect(g::GaussianRate, tj)
+function delay(g::GaussianRate, tj)
     a, b, c = g.a[], g.b[], g.c[]
     y=2/(a*c*sqrt(π))*(cumulated(g, tj) - log(rand())) + erfc(b/c);
     if y > 2
@@ -56,7 +56,7 @@ Base.:*(g1::ConstantRate, g2::ConstantRate) = ConstantRate(g1.c*g2.c)
 Base.:*(g1::ConstantRate, g2::GaussianRate) = GaussianRate(g1.c*g2.a,g2.b,g2.c)
 Base.:*(g2::GaussianRate, g1::ConstantRate) = g1*g2
 cumulated(c::ConstantRate, Δt) = c.c*Δt
-infect(c::ConstantRate, tj) = tj - log(rand())/c.c
+delay(c::ConstantRate, tj) = tj - log(rand())/c.c
 density(c::ConstantRate, t) = c.c
 shift(c::ConstantRate, tj) = c
 
@@ -82,10 +82,10 @@ function cumulated(m::MaskedRate, t)
     return s
 end
 
-function infect(m::MaskedRate, tj)
+function delay(m::MaskedRate, tj)
     for ab in m.mask.v
         tj > right(ab) && continue
-        t = infect(m.rate, max(left(ab),tj))
+        t = delay(m.rate, max(left(ab),tj))
         t ∈ ab  && return t
     end
     return Inf
@@ -98,7 +98,7 @@ Base.:*(m::MaskedRate, n::MaskedRate) = MaskedRate(m.rate*n.rate, m.mask ∩ n.m
 struct UnitRate <: RateContinuous end
 
 cumulated(::UnitRate, Δt) = Δt
-infect(::UnitRate, tj) = tj - log(rand())
+delay(::UnitRate, tj) = tj - log(rand())
 density(::UnitRate, t) = 1.0
 
 Base.:*(u::UnitRate, r::RateContinuous) = r
