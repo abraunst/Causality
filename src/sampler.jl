@@ -4,7 +4,7 @@ export Sampler, prior, post
 
 
 
-function Sampler(M::StochasticModel)
+function Sampler(M::GenericDynamicSM{<:IndividualSI})
     N = size(M.Λ,1)
     s = falses(N)
     Q = PriorityQueue{Int,Float64}()
@@ -31,6 +31,42 @@ function Sampler(M::StochasticModel)
         return x
     end
 end
+
+
+function Sampler(M::GenericDynamicSM{<:IndividualSEIR})
+    N = size(M.Λ,1)
+    s = falses(N)
+    Q = PriorityQueue{Int,Vector{Float64}}()
+    function sample!(x)
+        @assert N == size(x,1)
+        empty!(Q)
+        x .= M.T
+        s .= false
+        for i in eachindex(x)
+            ind = individual(M, i)
+            tE = min(M.T, rand() < ind.pseed ? zero(M.T) : infect(ind.autoinf, zero(M.T)))
+            tI = min(M.T, )
+            tR = min(M.T, )
+            Q[i] = [tE, tI, tR]
+        end
+        while !isempty(Q)
+            i, t = dequeue_pair!(Q)
+            s[i] && continue
+            s[i] = true
+            x[i] = t
+            for (j,rij) ∈ out_neighbors(M,i)
+                if !s[j]
+                    Q[j] = min(Q[j], infect(shift(individual(M,i).out,t) * rij * individual(M,j).inf, t))
+                end
+            end
+        end
+        return x
+    end
+end
+
+
+
+
 
 
 function prior(sample!; numsamples=10^5)
