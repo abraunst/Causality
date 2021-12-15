@@ -16,7 +16,7 @@ struct IndividualSI{T,Rauto,Rinf,Rout}
     out::Rout
 end
 
-Individual{Rauto, Rinf}(θi, rout) where {Rauto, Rinf} = @views Individual(θi[1], Rauto(θi[2:1+nparams(Rauto)]...), Rinf(θi[2+nparams(Rauto):1+nparams(Rauto)+nparams(Rinf)]...), rout)
+IndividualSI{Rauto, Rinf}(θi, rout) where {Rauto, Rinf} = @views IndividualSI(θi[1], Rauto(θi[2:1+nparams(Rauto)]...), Rinf(θi[2+nparams(Rauto):1+nparams(Rauto)+nparams(Rinf)]...), rout)
 
 
 

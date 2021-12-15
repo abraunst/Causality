@@ -55,7 +55,7 @@ function Sampler(M::GenericDynamicSM{<:IndividualSEIR})  #0=S  1=E  2=I  3=R
             else 
                 for (j,rij) ∈ out_neighbors(M,i)
                     if s[j] == 0 
-                        Q[j] = min(Q[j], infect(shift(individual(M,i).out,t) * rij * individual(M,j).inf, t))
+                        Q[j] = min(Q[j], delay(shift(individual(M,i).out,t) * rij * individual(M,j).inf, t))
                     end
                 end
                 s[i] = 3
