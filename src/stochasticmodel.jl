@@ -1,6 +1,6 @@
 using SparseArrays
 
-export StochasticModel, Individual, GenericStaticSM, GenericDynamicSM
+export StochasticModel, IndividualSEIR, IndividualSI, GenericStaticSM, GenericDynamicSM
 
 abstract type StochasticModel end
 
