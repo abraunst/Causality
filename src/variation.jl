@@ -4,7 +4,7 @@ import Enzyme, ForwardDiff
 export descend!, logQ
 
 
-function logQi(M, i, ind, x)     #x[i] = (tE, tI, tR)
+function logQi(M::StochasticModel{<:IndividualSEIR}, i, ind, x)     #x[i] = (tE, tI, tR)
     iszero(x[i,1]) && return log(ind.pseed)
     s = log(1-ind.pseed)
     s -= cumulated(ind.autoinf, x[i,1])
@@ -30,6 +30,24 @@ function logQi(M, i, ind, x)     #x[i] = (tE, tI, tR)
     return s
 end
 
+
+function logQi(M::StochasticModel{<:IndividualSI}, i, ind, x)
+    iszero(x[i]) && return log(ind.pseed)
+    s = log(1-ind.pseed)
+    s -= cumulated(ind.autoinf, x[i])
+    s2 = density(ind.autoinf, x[i])
+    for (j,rji) ∈ neighbors(M, i)
+        if x[j] < x[i]
+            inf = ind.inf * rji * shift(individual(M,j).out,x[j])
+            s -= cumulated(inf, x[i]) - cumulated(inf, x[j])
+            s2 += density(inf, x[i])
+        end
+    end
+    if x[i] < M.T
+        s += log(s2)
+    end
+    return s
+end
 
 function logQ(x, M::StochasticModel)
     sum(logQi(M, i, individual(M,i), x) for i in eachindex(x); init=0.0)
