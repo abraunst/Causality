@@ -4,7 +4,7 @@ export Sampler, prior, post
 
 
 
-function Sampler(M::GenericDynamicSM{<:IndividualSI})
+function Sampler(M::StochasticModel{<:IndividualSI})
     N = size(M.Λ,1)
     s = falses(N)
     Q = PriorityQueue{Int,Float64}()
@@ -33,7 +33,7 @@ function Sampler(M::GenericDynamicSM{<:IndividualSI})
 end
 
 
-function Sampler(M::GenericDynamicSM{<:IndividualSEIR})  #0=S  1=E  2=I  3=R
+function Sampler(M::StochasticModel{<:IndividualSEIR})  #0=S  1=E  2=I  3=R
     N = size(M.Λ,1)
     s = zeros(N)
     Q = PriorityQueue{Int,Float64}()
