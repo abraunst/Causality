@@ -48,7 +48,7 @@ struct StochasticModel{I,Rout,VR} <: AbstractStochasticModel
 end
 
 
-function StochasticModel{I}(T,θ,G,out::Rout; V::VR = fill(UnitRate(), nnz(G))) where {I,Rout,VR}
+function StochasticModel{I}(T,θ,G,out::Rout,V::VR = fill(UnitRate(), nnz(G))) where {I,Rout,VR}
     G1=SparseMatrixCSC(G.m, G.n, G.colptr, G.rowval, collect(1:nnz(G)))
     G2=sparse(G1')
     StochasticModel{I,Rout,VR}(T,θ,G,G2,out,V)
