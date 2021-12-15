@@ -23,7 +23,7 @@ function Sampler(M::GenericDynamicSM{<:IndividualSI})
             s[i] = true
             x[i] = t
             for (j,rij) ∈ out_neighbors(M,i)
-                if !s[j] && 
+                if !s[j]  
                     Q[j] = min(Q[j], delay(shift(individual(M,i).out,t) * rij * individual(M,j).inf, t))
                 end
             end
