@@ -4,20 +4,28 @@ import Enzyme, ForwardDiff
 export descend!, logQ
 
 
-function logQi(M, i, ind, x)
-    iszero(x[i]) && return log(ind.pseed)
+function logQi(M, i, ind, x)     #x[i] = (tE, tI, tR)
+    iszero(x[i,1]) && return log(ind.pseed)
     s = log(1-ind.pseed)
-    s -= cumulated(ind.autoinf, x[i])
-    s2 = density(ind.autoinf, x[i])
+    s -= cumulated(ind.autoinf, x[i,1])
+    sSE = density(ind.autoinf, x[i,1])
     for (j,rji) ∈ in_neighbors(M, i)
-        if x[j] < x[i]
+        if x[j,2] < x[i,1]
             inf = ind.inf * rji * shift(individual(M,j).out,x[j])
-            s -= cumulated(inf, x[i]) - cumulated(inf, x[j])
-            s2 += density(inf, x[i])
+            s -= cumulated(inf, x[i,1]) - cumulated(inf, x[j,2])
+            sSE += density(inf, x[i,1])
         end
     end
-    if x[i] < M.T
-        s += log(s2)
+    if x[i,1] < M.T
+        s += log(sSE)
+    end
+    s -= cumulated(ind.latency,x[i,2]-x[i,1]) 
+    if x[i,2] < M.T
+        s += log(density(ind.latency, x[i,2]))
+    end
+    s -= cumulated(ind.recov,x[i,3]-x[i,2]) 
+    if x[i,3] < M.T
+        s += log(density(ind.recov, x[i,3]))
     end
     return s
 end
