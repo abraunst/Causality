@@ -51,7 +51,7 @@ function Sampler(M::GenericDynamicSM{<:IndividualSEIR})  #0=S  1=E  2=I  3=R
             s[i] += 1 
             x[i,s[i]] = t 
             if s[i] == 1
-                Q[i] = min(M.T, delay(ind.latency,t))
+                Q[i] = min(M.T, delay(shift(ind.latency,t),t))
             else 
                 for (j,rij) ∈ out_neighbors(M,i)
                     if s[j] == 0 
@@ -59,7 +59,7 @@ function Sampler(M::GenericDynamicSM{<:IndividualSEIR})  #0=S  1=E  2=I  3=R
                     end
                 end
                 s[i] = 3
-                x[i,3] = min(M.T, delay(ind.recov,t))
+                x[i,3] = min(M.T, delay(shift(ind.recov,t),t))
             end
             
         end
