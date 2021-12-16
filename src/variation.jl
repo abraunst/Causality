@@ -4,14 +4,14 @@ import Enzyme, ForwardDiff
 export descend!, logQ
 
 
-function logQi(M::StochasticModel{<:IndividualSEIR}, i, ind, x)     #x[i] = (tE, tI, tR)
+function logQi(M::StochasticModel{<:IndividualSEIR}, i, ind, x::Matrix{Float64})     #x[i] = (tE, tI, tR)
     iszero(x[i,1]) && return log(ind.pseed)
     s = log(1-ind.pseed)
     s -= cumulated(ind.autoinf, x[i,1])
     sSE = density(ind.autoinf, x[i,1])
     for (j,rji) ∈ in_neighbors(M, i)
         if x[j,2] < x[i,1]
-            inf = ind.inf * rji * shift(individual(M,j).out,x[j])
+            inf = ind.inf * rji * shift(individual(M,j).out,x[j,2])
             s -= cumulated(inf, x[i,1]) - cumulated(inf, x[j,2])
             sSE += density(inf, x[i,1])
         end
@@ -21,11 +21,11 @@ function logQi(M::StochasticModel{<:IndividualSEIR}, i, ind, x)     #x[i] = (tE,
     end
     s -= cumulated(ind.latency,x[i,2]-x[i,1]) 
     if x[i,2] < M.T
-        s += log(density(ind.latency, x[i,2]))
+        s += log(density(ind.latency, x[i,2]-x[i,1]))
     end
     s -= cumulated(ind.recov,x[i,3]-x[i,2]) 
     if x[i,3] < M.T
-        s += log(density(ind.recov, x[i,3]))
+        s += log(density(ind.recov, x[i,3]-x[i,2]))
     end
     return s
 end
@@ -55,7 +55,6 @@ end
 
 
 logO(x::Vector{Float64}, O) = sum(log(p + ((x[i] < t) == s)*(1-2p)) for (i,s,t,p) in O; init=0.0)
-
 logO(x::Matrix{Float64}, O) = sum(log(p + ((x[i,2] < t < x[i,3]) == s)*(1-2p)) for (i,s,t,p) in O; init=0.0)
 
 function descend!(Mp, O; M = copy(Mp),
@@ -88,6 +87,7 @@ function descend!(Mp, O; M = copy(Mp),
             gradient!(dθ[ti], x, M)
             Dθ[ti] .+= F .* dθ[ti]
             avF[ti] += F
+            @show logQ(x,M) logQ(x, Mp)
         end
         #@show Dθ[1]
         for ti = 2:nt
