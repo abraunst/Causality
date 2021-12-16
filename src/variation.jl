@@ -54,9 +54,9 @@ function logQ(x, M::StochasticModel)
 end
 
 
-logO(x, O) = sum(log(p + ((x[i] < t) == s)*(1-2p)) for (i,s,t,p) in O; init=0.0)
+logO(x::Vector{Float64}, O) = sum(log(p + ((x[i] < t) == s)*(1-2p)) for (i,s,t,p) in O; init=0.0)
 
-logO(x, O) = sum(log(p + ((x[i,2] < t < x[i,3]) == s)*(1-2p)) for (i,s,t,p) in O; init=0.0)
+logO(x::Matrix{Float64}, O) = sum(log(p + ((x[i,2] < t < x[i,3]) == s)*(1-2p)) for (i,s,t,p) in O; init=0.0)
 
 function descend!(Mp, O; M = copy(Mp),
         numiters = 200, numsamples = 1000, ε = 1e-10,
