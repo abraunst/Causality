@@ -56,14 +56,17 @@ end
 
 logO(x, O) = sum(log(p + ((x[i] < t) == s)*(1-2p)) for (i,s,t,p) in O; init=0.0)
 
+logO(x, O) = sum(log(p + ((x[i,2] < t < x[i,3]) == s)*(1-2p)) for (i,s,t,p) in O; init=0.0)
+
 function descend!(Mp, O; M = copy(Mp),
         numiters = 200, numsamples = 1000, ε = 1e-10,
         descender = AdamDescender(M.θ, 1e-3),
         θmin = 1e-5,
         θmax = 1-1e-5)
+    number_of_states = n_states(M) 
     N = size(M.Λ,2)
     nt = Threads.nthreads()
-    X = [zeros(N) for ti=1:nt]
+    X = [zeros(N, number_of_states - 1) for ti=1:nt]
     dθ = [zero(M.θ) for ti=1:nt]
     Dθ = [zero(M.θ) for ti=1:nt]
     avF = zeros(nt)
