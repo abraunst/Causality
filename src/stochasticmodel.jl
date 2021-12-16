@@ -59,3 +59,5 @@ individual(M::StochasticModel{I}, θi) where I = I(θi, M.out)
 individual(M::StochasticModel, i::Int) = individual(M, @view M.θ[:,i])
 in_neighbors(M::StochasticModel, i::Int) = ((M.Λ.rowval[k], M.V[k]) for k ∈ nzrange(M.Λ,i))
 out_neighbors(M::StochasticModel, i::Int) = ((M.Λ2.rowval[k], M.V[M.Λ2.nzval[k]]) for k ∈ nzrange(M.Λ2,i))
+n_states(M::StochasticModel{<: IndividualSI}) = 2
+n_states(M::StochasticModel{<: IndividualSEIR}) = 4
