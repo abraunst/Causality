@@ -50,7 +50,7 @@ function logQi(M::StochasticModel{<:IndividualSI}, i, ind, x)
 end
 
 function logQ(x, M::StochasticModel)
-    sum(logQi(M, i, individual(M,i), x) for i in eachindex(x); init=0.0)
+    sum(logQi(M, i, individual(M,i), x) for i = 1:size(x,1); init=0.0)
 end
 
 
