@@ -35,23 +35,23 @@ end
 
 function Sampler(M::StochasticModel{<:IndividualSEIR})  #0=S  1=E  2=I  3=R
     N = size(M.Λ,1)
-    s = zeros(N)
+    s = zeros(Int, N)
     Q = PriorityQueue{Int,Float64}()
     function sample!(x)
         @assert N == size(x,1)
         empty!(Q)
         x .= M.T
         s .= 0
-        for i in eachindex(x)
+        for i = 1:N
             ind = individual(M, i)
             Q[i] = min(M.T, rand() < ind.pseed ? zero(M.T) : delay(ind.autoinf, zero(M.T)))
         end
         while !isempty(Q)
-            i, t = dequeue_pair!(Q)   
+            i, t = dequeue_pair!(Q)  
             s[i] += 1 
             x[i,s[i]] = t 
             if s[i] == 1
-                Q[i] = min(M.T, delay(ind.latency,zero(M.T))+t)
+                Q[i] = min(M.T, delay(individual(M,i).latency,zero(M.T))+t)
             else 
                 for (j,rij) ∈ out_neighbors(M,i)
                     if s[j] == 0 
@@ -59,7 +59,7 @@ function Sampler(M::StochasticModel{<:IndividualSEIR})  #0=S  1=E  2=I  3=R
                     end
                 end
                 s[i] = 3
-                x[i,3] = min(M.T, delay(ind.recov,zero(M.T))+t)
+                x[i,3] = min(M.T, delay(individual(M,i).recov,zero(M.T))+t)
             end
             
         end
