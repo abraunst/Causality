@@ -36,7 +36,7 @@ function logQi(M::StochasticModel{<:IndividualSI}, i, ind, x)
     s = log(1-ind.pseed)
     s -= cumulated(ind.autoinf, x[i])
     s2 = density(ind.autoinf, x[i])
-    for (j,rji) ∈ neighbors(M, i)
+    for (j,rji) ∈ in_neighbors(M, i)
         if x[j] < x[i]
             inf = ind.inf * rji * shift(individual(M,j).out,x[j])
             s -= cumulated(inf, x[i]) - cumulated(inf, x[j])
@@ -54,8 +54,9 @@ function logQ(x, M::StochasticModel)
 end
 
 
-logO(x::Vector{Float64}, O) = sum(log(p + ((x[i] < t) == s)*(1-2p)) for (i,s,t,p) in O; init=0.0)
-logO(x::Matrix{Float64}, O) = sum(log(p + ((x[i,2] < t < x[i,3]) == s)*(1-2p)) for (i,s,t,p) in O; init=0.0)
+logO(x, O, M::StochasticModel{<:IndividualSI}) = sum(log(p + ((x[i] < t) == s)*(1-2p)) for (i,s,t,p) in O; init=0.0)
+
+logO(x, O, M::StochasticModel{<:IndividualSEIR}) = sum(log(p + ((x[i,2] < t < x[i,3]) == s)*(1-2p)) for (i,s,t,p) in O; init=0.0)
 
 function descend!(Mp, O; M = copy(Mp),
         numiters = 200, numsamples = 1000, ε = 1e-10,
@@ -82,7 +83,7 @@ function descend!(Mp, O; M = copy(Mp),
             ti = Threads.threadid()
             x, sample! = X[ti], S![ti]
             sample!(x)
-            F = (logQ(x, M) - logQ(x, Mp) - logO(x, O)) / numsamples
+            F = (logQ(x, M) - logQ(x, Mp) - logO(x, O, Mp)) / numsamples
             gradient!(dθ[ti], x, M)
             Dθ[ti] .+= F .* dθ[ti]
             avF[ti] += F
