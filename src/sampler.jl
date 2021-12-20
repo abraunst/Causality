@@ -1,6 +1,6 @@
 using DataStructures, ProgressMeter, SparseArrays
 
-export Sampler, prior, post
+export Sampler, prior, post, reweighted_post
 
 
 
@@ -96,4 +96,20 @@ function post(Mp, O; numsamples=10^4, stats = zeros(size(Mp.Λ,1), numsamples))
         stats[:, m] .= x
     end
     stats
+end
+
+
+function reweighted_post(Mp, M, O; numsamples=10^4, stats = zeros(size(Mp.Λ,1), numsamples))
+    weights = zeros(numsamples)
+    sample! = Sampler(M)
+    N = size(Mp.Λ,1)
+    x = zeros(N);
+    @showprogress for m=1:numsamples
+        sample!(x)
+        weights[m] = logQ(x, Mp) + logO(x, O, Mp) - logQ(x, M)
+        stats[:, m] .= x
+    end
+    weights .= exp.(weights .- minimum(weights)) 
+    weights ./= sum(weights)
+    stats, weights
 end
