@@ -83,19 +83,17 @@ function descend!(Mp, O; M = copy(Mp),
             x, sample! = X[ti], S![ti]
             sample!(x)
             F = (logQ(x, M) - logQ(x, Mp) - logO(x, O)) / numsamples
-            #!isfinite(F) && return x
             gradient!(dθ[ti], x, M)
             Dθ[ti] .+= F .* dθ[ti]
             avF[ti] += F
-            @show logQ(x,M) logQ(x, Mp)
+            #isinf(logQ(x, Mp)) && (@show F Dθ[ti] dθ[ti])
         end
-        #@show Dθ[1]
         for ti = 2:nt
+            any(isnan.(Dθ[ti])) && (@show sum(avF) t; return M)
             Dθ[1] .+= Dθ[ti]
-        end
+        end        
         step!(θ, Dθ[1], descender)
-        θ .= clamp.(θ, θmin, θmax)
-        any(isnan.(θ)) && (@show t; return M)
+        θ .= clamp.(θ, θmin, θmax)        
         ProgressMeter.next!(pr, showvalues=[(:F,sum(avF))])
     end
     sum(avF)
