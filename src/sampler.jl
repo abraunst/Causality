@@ -73,37 +73,39 @@ compatibility(x, O, Mp::StochasticModel{<:IndividualSEIR}) = all((x[i,2]<t<x[i,3
 
 
 
+prior(M::StochasticModel{<:IndividualSI}; numsamples=10^5) = prior(M, zeros(nv(M.G)); numsamples=numsamples)
+prior(M::StochasticModel{<:IndividualSEIR}; numsamples=10^5) = prior(M, zeros(nv(M.G), n_states(M)), numsamples=numsamples)
 
-function prior(M::StochasticModel; numsamples=10^5)
+function prior(M::StochasticModel, x; numsamples)
     sample! = Sampler(M)
     N = sample!.N
-    x = zeros(N, n_states(M) - 1);
-    stats = zeros(N, n_states(M)-1, numsamples)
+    stats = zeros(numsamples, size(x)...)
     @showprogress for i=1:numsamples
         sample!(x)
-        stats[:, :, i] .= x
+        stats[i, :] .= x
     end
     stats
 end
 
-function post(Mp, O; numsamples=10^4)
+post(M::StochasticModel{<:IndividualSI}, O; numsamples=10^5) = post(M, O, zeros(nv(M.G)); numsamples=numsamples)
+post(M::StochasticModel{<:IndividualSEIR}, O; numsamples=10^5) = post(M, O, zeros(nv(M.G), n_states(M)), numsamples=numsamples)
+function post(Mp, O, x; numsamples=10^4)
     sample! = Sampler(Mp)
     N = nv(Mp.G)
-    stats = zeros(N, n_states(Mp) - 1, numsamples)
-    x = zeros(N, n_states(Mp) -1);
+    stats = zeros(numsamples, size(x)...)
     @showprogress for m=1:numsamples
         ok = false
         while !ok
             sample!(x)
             ok = compatibility(x, O, Mp)
         end
-        stats[:, :, m] .= x
+        stats[m, :] .= x
     end
     stats
 end
 
 
-function reweighted_post(Mp, M, O; numsamples=10^4, stats = zeros(nv(Mp.G), numsamples))
+function reweighted_post(Mp, M, O; numsamples=10^4, stats = zeros(numsamples, nv(Mp.G)))
     weights = zeros(numsamples)
     sample! = Sampler(M)
     N = nv(Mp.G)
@@ -111,7 +113,7 @@ function reweighted_post(Mp, M, O; numsamples=10^4, stats = zeros(nv(Mp.G), nums
     @showprogress for m=1:numsamples
         sample!(x)
         weights[m] = logQ(x, Mp) + logO(x, O, Mp) - logQ(x, M)
-        stats[:, m] .= x
+        stats[m, :] .= x
     end
     weights .= exp.(weights .- minimum(weights))
     weights ./= sum(weights)
