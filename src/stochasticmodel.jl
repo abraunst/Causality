@@ -38,26 +38,18 @@ Rrec(θi[2+nparams(Rauto)+nparams(Rinf)+nparams(Rlat):1+nparams(Rauto)+nparams(R
 
 
 
-struct StochasticModel{I,Rout,VR} <: AbstractStochasticModel
+struct StochasticModel{I,GT,Rout,VR} <: AbstractStochasticModel
     T::Float64
-    θ::Matrix
-    Λ::SparseMatrixCSC{Bool, Int}  
-    Λ2::SparseMatrixCSC{Int, Int}  
+    θ::Matrix{Float64}
+    G::GT
     out::Rout
     V::VR
 end
-
-
-function StochasticModel{I}(T,θ,G,out::Rout,V::VR = fill(UnitRate(), nnz(G))) where {I,Rout,VR}
-    G1=SparseMatrixCSC(G.m, G.n, G.colptr, G.rowval, collect(1:nnz(G)))
-    G2=sparse(G1')
-    StochasticModel{I,Rout,VR}(T,θ,G,G2,out,V)
-end
-
+StochasticModel(::Type{I}, T, θ, G::GT, out::Rout, V::VR) where {I,GT,Rout,VR} = StochasticModel{I,GT,Rout,VR}(T,θ,G,out,V)
 
 individual(M::StochasticModel{I}, θi) where I = I(θi, M.out)
 individual(M::StochasticModel, i::Int) = individual(M, @view M.θ[:,i])
-in_neighbors(M::StochasticModel, i::Int) = ((M.Λ.rowval[k], M.V[k]) for k ∈ nzrange(M.Λ,i))
-out_neighbors(M::StochasticModel, i::Int) = ((M.Λ2.rowval[k], M.V[M.Λ2.nzval[k]]) for k ∈ nzrange(M.Λ2,i))
+in_neighbors(M::StochasticModel, i::Int) = ((e.src, M.V[e.idx]) for e ∈ inedges(M.G, i))
+out_neighbors(M::StochasticModel, i::Int) = ((e.dst, M.V[e.idx]) for e ∈ outedges(M.G, i))
 n_states(M::StochasticModel{<: IndividualSI}) = 2
 n_states(M::StochasticModel{<: IndividualSEIR}) = 4

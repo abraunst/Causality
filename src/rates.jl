@@ -21,6 +21,11 @@ function density(g::GaussianRate, t)
     a*exp(-((t-b)/c)^2)
 end
 
+
+logdensity(g::RateContinuous, t) = log(density(g, t))
+
+logdensity(g::GaussianRate, t) = -((t-g.b)/g.c)^2 + log(g.a)
+
 function cumulated(g::GaussianRate, t)
     a, b, c = g.a[], g.b[], g.c[]
     a*c*0.5*sqrt(π)*(erfc(-(t-b)/c)-erfc(b/c))
@@ -68,6 +73,8 @@ end
 
 density(m::MaskedRate, t) = t ∈ m.mask ? density(m.rate, t) : 0.0
 
+logdensity(m::MaskedRate, t) = t ∈ m.mask ? logdensity(m.rate, t) : -Inf
+
 function cumulated(m::MaskedRate, t)
     s = 0.0
     for ab in m.mask.v
@@ -100,6 +107,7 @@ struct UnitRate <: RateContinuous end
 cumulated(::UnitRate, Δt) = Δt
 delay(::UnitRate, tj) = tj - log(rand())
 density(::UnitRate, t) = 1.0
+logdensity(::UnitRate, t) = 0.0
 
 Base.:*(u::UnitRate, r::RateContinuous) = r
 Base.:*(r::RateContinuous, u::UnitRate) = r

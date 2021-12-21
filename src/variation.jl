@@ -19,11 +19,11 @@ function logQi(M::StochasticModel{<:IndividualSEIR}, i, ind, x::Matrix{Float64})
     if x[i,1] < M.T
         s += log(sSE)
     end
-    s -= cumulated(ind.latency,x[i,2]-x[i,1]) 
+    s -= cumulated(ind.latency,x[i,2]-x[i,1])
     if x[i,2] < M.T
         s += log(density(ind.latency, x[i,2]-x[i,1]))
     end
-    s -= cumulated(ind.recov,x[i,3]-x[i,2]) 
+    s -= cumulated(ind.recov,x[i,3]-x[i,2])
     if x[i,3] < M.T
         s += log(density(ind.recov, x[i,3]-x[i,2]))
     end
@@ -64,7 +64,7 @@ function descend!(Mp, O; M = copy(Mp),
         θmin = 1e-5,
         θmax = 1-1e-5)
     number_of_states = n_states(M) 
-    N = size(M.Λ,2)
+    N = nv(M.G)
     nt = Threads.nthreads()
     X = [zeros(N, number_of_states - 1) for ti=1:nt]
     dθ = [zero(M.θ) for ti=1:nt]
