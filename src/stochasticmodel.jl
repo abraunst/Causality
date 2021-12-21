@@ -45,7 +45,7 @@ struct StochasticModel{I,GT,Rout,VR} <: AbstractStochasticModel
     out::Rout
     V::VR
 end
-StochasticModel(::Type{I}, T, θ, G::GT, out::Rout, V::VR) where {I,GT,Rout,VR} = StochasticModel{I,GT,Rout,VR}(T,θ,G,out,V)
+StochasticModel(::Type{I}, T, θ, G::GT, out::Rout, V::VR = fill(UnitRate(), nnz(G))) where {I,GT,Rout,VR} = StochasticModel{I,GT,Rout,VR}(T,θ,G,out,V)
 
 individual(M::StochasticModel{I}, θi) where I = I(θi, M.out)
 individual(M::StochasticModel, i::Int) = individual(M, @view M.θ[:,i])
