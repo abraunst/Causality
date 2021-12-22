@@ -120,19 +120,3 @@ function reweighted_post(Mp, M, O; numsamples=10^4, stats = zeros(numsamples, nv
     stats, weights
 end
 
-
-function reweighted_post(Mp, M, O; numsamples=10^4, )
-    weights = zeros(numsamples)
-    sample! = Sampler(M)
-    N = size(Mp.Λ,1)
-    stats = zeros(N, n_states(M) -1, numsamples)
-    x = zeros(N, n_states(M) -1);
-    @showprogress for m=1:numsamples
-        sample!(x)
-        weights[m] = logQ(x, Mp) + logO(x, O, Mp) - logQ(x, M)
-        stats[:, :,  m] .= x
-    end
-    weights .= exp.(weights .- minimum(weights))
-    weights ./= sum(weights)
-    stats, weights
-end
