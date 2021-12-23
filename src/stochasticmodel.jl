@@ -54,5 +54,5 @@ out_neighbors(M::StochasticModel, i::Int) = ((e.dst, M.V[e.idx]) for e ∈ outed
 n_states(M::StochasticModel{<: IndividualSI}) = 2
 n_states(M::StochasticModel{<: IndividualSEIR}) = 4
 
-trajectorysize(M::StochasticModel{<: IndividualSI}) = (N,)   
-trajectorysize(M::StochasticModel{<: IndividualSEIR}) = (N, 3)  
+trajectorysize(M::StochasticModel{<: IndividualSI}) = (nv(M.G))   
+trajectorysize(M::StochasticModel{<: IndividualSEIR}) = (nv(M.G), 3)  

@@ -73,26 +73,23 @@ compatibility(x, O, Mp::StochasticModel{<:IndividualSEIR}) = all((x[i,2]<t<x[i,3
 
 
 
-prior(M::StochasticModel{<:IndividualSI}; numsamples=10^5) = prior(M, zeros(nv(M.G)); numsamples=numsamples)
-prior(M::StochasticModel{<:IndividualSEIR}; numsamples=10^5) = prior(M, zeros(nv(M.G), n_states(M)), numsamples=numsamples)
 
-function prior(M::StochasticModel, x; numsamples)
+function prior(M::StochasticModel; numsamples=10^4)
     sample! = Sampler(M)
+    x = zeros(trajectorysize(M))
     N = sample!.N
     stats = zeros(numsamples, size(x)...)
     @showprogress for i=1:numsamples
         sample!(x)
-        stats[i, :] .= x
+        stats[i, :, :] .= x
     end
     stats
 end
 
-post(M::StochasticModel{<:IndividualSI}, O; numsamples=10^5) = post(M, O, zeros(nv(M.G)); numsamples=numsamples)
 
-post(M::StochasticModel{<:IndividualSEIR}, O; numsamples=10^5) = post(M, O, zeros(nv(M.G), n_states(M)-1), numsamples=numsamples)
-
-function post(Mp, O, x; numsamples=10^4)
+function post(Mp, O; numsamples=10^4)
     sample! = Sampler(Mp)
+    x = zeros(trajectorysize(Mp))
     N = nv(Mp.G)
     stats = zeros(numsamples, size(x)...)
     @showprogress for m=1:numsamples
@@ -101,21 +98,22 @@ function post(Mp, O, x; numsamples=10^4)
             sample!(x)
             ok = compatibility(x, O, Mp)
         end
-        stats[m, :] .= x
+        stats[m, :, :] .= x
     end
     stats
 end
 
 
-function reweighted_post(Mp, M, O; numsamples=10^4, stats = zeros(numsamples, nv(Mp.G)))
+function reweighted_post(Mp, M, O; numsamples=10^4)
     weights = zeros(numsamples)
     sample! = Sampler(M)
     N = nv(Mp.G)
-    x = zeros(N);
+    x = zeros(trajectorysize(Mp));
+    stats = zeros(numsamples, size(x)...)
     @showprogress for m=1:numsamples
         sample!(x)
         weights[m] = logQ(x, Mp) + logO(x, O, Mp) - logQ(x, M)
-        stats[m, :] .= x
+        stats[m, :, :] .= x
     end
     weights .= exp.(weights .- minimum(weights))
     weights ./= sum(weights)
