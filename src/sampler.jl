@@ -33,8 +33,8 @@ end
 
 
 function Sampler(M::StochasticModel{<:IndividualSEIR})  #0=S  1=E  2=I  3=R
-    N = nv(M.G)
-    s = zeros(Int, N)
+    N::Int = nv(M.G)
+    s::Vector{Int} = zeros(Int, N)
     Q::TrackingHeap{Int, Float64, 2, MinHeapOrder, NoTrainingWheels} = TrackingHeap(Float64, S=NoTrainingWheels)
     function sample!(x)
         @assert N == size(x,1)
