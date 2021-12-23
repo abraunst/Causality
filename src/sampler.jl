@@ -88,7 +88,9 @@ function prior(M::StochasticModel, x; numsamples)
 end
 
 post(M::StochasticModel{<:IndividualSI}, O; numsamples=10^5) = post(M, O, zeros(nv(M.G)); numsamples=numsamples)
-post(M::StochasticModel{<:IndividualSEIR}, O; numsamples=10^5) = post(M, O, zeros(nv(M.G), n_states(M)), numsamples=numsamples)
+
+post(M::StochasticModel{<:IndividualSEIR}, O; numsamples=10^5) = post(M, O, zeros(nv(M.G), n_states(M)-1), numsamples=numsamples)
+
 function post(Mp, O, x; numsamples=10^4)
     sample! = Sampler(Mp)
     N = nv(Mp.G)
