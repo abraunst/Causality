@@ -11,6 +11,24 @@ function makeBarabasi(N; k=1)
 end
 
 
+function makeProximity(N,R2)
+    lattice = rand(N,2)
+    edgesL = []
+    edgesR = []
+    for i=1:N
+        for j=1:i-1
+            if (lattice[i,1]-lattice[j,1])^2+(lattice[i,2]-lattice[j,2])^2 < R2 
+                append!(edgesL,i)
+                append!(edgesR,j)
+            end
+        end
+    end
+    A = sparse(edgesL, edgesR, fill(true, length(edgesL)), N, N)
+    A .+= A'
+    return SparseMatrixDiGraph(A) 
+end
+
+
 struct SparseMatrixDiGraph{T} <: AbstractGraph{T}
     A::SparseMatrixCSC{Irrational{:π}, T}
     X::SparseMatrixCSC{T,T}
