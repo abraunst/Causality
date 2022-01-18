@@ -36,6 +36,10 @@ function Sampler(M::StochasticModel{<:IndividualSEIR})  #0=S  1=E  2=I  3=R
     N::Int = nv(M.G)
     s::Vector{Int} = zeros(Int, N)
     Q::TrackingHeap{Int, Float64, 2, MinHeapOrder, NoTrainingWheels} = TrackingHeap(Float64, S=NoTrainingWheels)
+    function updateQ!(i, t) 
+        t >= M.T && continue
+        Q[i] = haskey(Q, i) ? min(Q[i], t) : t
+    end
     function sample!(x)
         @assert N == size(x,1)
         empty!(Q)
@@ -43,23 +47,23 @@ function Sampler(M::StochasticModel{<:IndividualSEIR})  #0=S  1=E  2=I  3=R
         s .= 0
         for i = 1:N
             ind = individual(M, i)
-            Q[i] = min(M.T, rand() < ind.pseed ? zero(M.T) : delay(ind.autoinf, zero(M.T)))
+            updateQ!(i, rand() < ind.pseed ? zero(M.T) : delay(ind.autoinf, zero(M.T)))
         end
         while !isempty(Q)
             i, t = pop!(Q)
             s[i] += 1
             x[i,s[i]] = t
             if s[i] == 1
-                Q[i] = min(M.T, delay(individual(M,i).latency,zero(M.T))+t)
-            else
-                x[i,3] = min(M.T, delay(individual(M,i).recov,zero(M.T))+t)
+                updateQ!(i, delay(individual(M,i).latency,zero(M.T))+t)
+            elseif s[i] == 2
+                trec = min(M.T, delay(individual(M,i).recov,zero(M.T))+t)
                 for (j,rij) ∈ out_neighbors(M,i)
                     if s[j] == 0
                         tij = delay(shift(individual(M,i).out,t) * rij * individual(M,j).inf, t)
-                        Q[j] = min( Q[j], (tij < x[i,3] ? tij : M.T) )
+                        tij < trec && updateQ!(j, tij)
                     end
                 end
-                s[i] = 3
+                updateQ!(i, trec)
             end
         end
         return x

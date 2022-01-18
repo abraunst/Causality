@@ -5,19 +5,23 @@ export descend!, logQ
 
 
 function logQi(M::StochasticModel{<:IndividualSEIR}, i, ind, x::Matrix{Float64})     #x[i] = (tE, tI, tR)
-    iszero(x[i,1]) && return log(ind.pseed)
-    s = log(1-ind.pseed)
-    s -= cumulated(ind.autoinf, x[i,1])
-    sSE = density(ind.autoinf, x[i,1])
-    for (j,rji) ∈ in_neighbors(M, i)
-        if x[j,2] < x[i,1]
-            inf = ind.inf * rji * shift(individual(M,j).out,x[j,2])
-            s -= cumulated(inf, x[i,1]) - cumulated(inf, x[j,2])
-            sSE += density(inf, x[i,1])
+    s = 0.0
+    if iszero(x[i,1])
+        s += log(ind.pseed)
+    else
+        s += log(1-ind.pseed)
+        s -= cumulated(ind.autoinf, x[i,1])
+        sSE = density(ind.autoinf, x[i,1])
+        for (j,rji) ∈ in_neighbors(M, i)
+            if x[j,2] < x[i,1]
+                inf = ind.inf * rji * shift(individual(M,j).out,x[j,2])
+                s -= cumulated(inf, x[i,1]) - cumulated(inf, x[j,2])
+                sSE += density(inf, x[i,1])
+            end
         end
-    end
-    if x[i,1] < M.T
-        s += log(sSE)
+        if x[i,1] < M.T
+            s += log(sSE)
+        end
     end
     s -= cumulated(ind.latency,x[i,2]-x[i,1])
     if x[i,2] < M.T
