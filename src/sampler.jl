@@ -36,9 +36,10 @@ function Sampler(M::StochasticModel{<:IndividualSEIR})  #0=S  1=E  2=I  3=R
     N::Int = nv(M.G)
     s::Vector{Int} = zeros(Int, N)
     Q::TrackingHeap{Int, Float64, 2, MinHeapOrder, NoTrainingWheels} = TrackingHeap(Float64, S=NoTrainingWheels)
-    function updateQ!(i, t) 
-        t >= M.T && continue
-        Q[i] = haskey(Q, i) ? min(Q[i], t) : t
+    function updateQ!(i, t)
+        if t < M.T
+            Q[i] = haskey(Q, i) ? min(Q[i], t) : t
+        end
     end
     function sample!(x)
         @assert N == size(x,1)
