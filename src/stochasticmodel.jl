@@ -4,7 +4,6 @@ export StochasticModel, IndividualSEIR, IndividualSI, GenericStaticSM, GenericDy
 
 abstract type AbstractStochasticModel end
 
-
 ### some specific models follow
 
 # An Individual with pseed, autoinf, inf and out. Note that out infection is fixed
@@ -33,22 +32,24 @@ struct IndividualSEIR{T,Rauto,Rinf,Rout,Rlat,Rrec,Rgenlat,Rgenrec}
     recov_delay::Rgenrec
 end
 
+IndividualSEIR{Rauto, Rinf, Rlat, Rrec}(θi, (rout, rlat, rrec)) where {Rauto, Rinf, Rlat, Rrec} = @views IndividualSEIR(θi[1],
+    Rauto(θi[2:1+nparams(Rauto)]...),
+    Rinf(θi[2+nparams(Rauto):1+nparams(Rauto)+nparams(Rinf)]...),
+    rout,
+    Rlat(θi[2+nparams(Rauto)+nparams(Rinf):1+nparams(Rauto)+nparams(Rinf)+nparams(Rlat)]...),
+    rlat,
+    Rrec(θi[2+nparams(Rauto)+nparams(Rinf)+nparams(Rlat):1+nparams(Rauto)+nparams(Rinf)+nparams(Rlat)+nparams(Rrec)]...),
+    rrec)
 
-IndividualSEIR{Rauto, Rinf, Rlat, Rrec}(θi, rout) where {Rauto, Rinf, Rlat, Rrec} = @views IndividualSEIR(θi[1], Rauto(θi[2:1+nparams(Rauto)]...), Rinf(θi[2+nparams(Rauto):1+nparams(Rauto)+nparams(Rinf)]...), rout[1],
-Rlat(θi[2+nparams(Rauto)+nparams(Rinf):1+nparams(Rauto)+nparams(Rinf)+nparams(Rlat)]...), rout[2],
-Rrec(θi[2+nparams(Rauto)+nparams(Rinf)+nparams(Rlat):1+nparams(Rauto)+nparams(Rinf)+nparams(Rlat)+nparams(Rrec)]...),rout[3])
-
-
-
-struct StochasticModel{I,GT,Rout,VR} <: AbstractStochasticModel
+struct StochasticModel{I,GT,Rgen,VR} <: AbstractStochasticModel
     T::Float64
     θ::Matrix{Float64}
     G::GT
-    out::Rout
+    gen::Rgen
     V::VR
 end
 
-StochasticModel(::Type{I}, T, θ, G::GT, out::Rout, V::VR = fill(UnitRate(), ne(G))) where {I,GT,Rout,VR} = StochasticModel{I,GT,Rout,VR}(T,θ,G,out,V)
+StochasticModel(::Type{I}, T, θ, G::GT, gen::Rgen, V::VR = fill(UnitRate(), ne(G))) where {I,GT,Rgen,VR} = StochasticModel{I,GT,Rout,VR}(T,θ,G,gen,V)
 
 individual(M::StochasticModel{I}, θi) where I = I(θi, M.out)
 individual(M::StochasticModel, i::Int) = individual(M, @view M.θ[:,i])
@@ -57,5 +58,5 @@ out_neighbors(M::StochasticModel, i::Int) = ((e.dst, M.V[e.idx]) for e ∈ outed
 n_states(M::StochasticModel{<: IndividualSI}) = 2
 n_states(M::StochasticModel{<: IndividualSEIR}) = 4
 
-trajectorysize(M::StochasticModel{<: IndividualSI}) = (nv(M.G))   
-trajectorysize(M::StochasticModel{<: IndividualSEIR}) = (nv(M.G), 3)  
+trajectorysize(M::StochasticModel{<: IndividualSI}) = (nv(M.G))
+trajectorysize(M::StochasticModel{<: IndividualSEIR}) = (nv(M.G), 3)
