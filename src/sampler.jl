@@ -55,9 +55,9 @@ function Sampler(M::StochasticModel{<:IndividualSEIR})  #0=S  1=E  2=I  3=R
             s[i] += 1
             x[i,s[i]] = t
             if s[i] == 1
-                updateQ!(i, delay(individual(M,i).latency,zero(M.T))+t)
+                updateQ!(i, delay(shift(individual(M,i).lat_delay,t) * individual(M,i).latency, t))
             elseif s[i] == 2
-                trec = min(M.T, delay(individual(M,i).recov,zero(M.T))+t)
+                trec = min(M.T, delay(shift(individual(M,i).recov_delay,t) * individual(M,i).recov, t))
                 for (j,rij) ∈ out_neighbors(M,i)
                     if s[j] == 0
                         tij = delay(shift(individual(M,i).out,t) * rij * individual(M,j).inf, t)
