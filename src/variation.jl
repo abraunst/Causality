@@ -25,13 +25,15 @@ function logQi(M::StochasticModel{<:IndividualSEIR}, i, ind, x::Matrix{Float64})
             s += log(sSE)
         end
     end
-    s -= cumulated(ind.latency,x[i,2]-x[i,1])
+    lat = shift(ind.lat_delay, x[i,1]) * ind.latency
+    s -= cumulated(lat, x[i,2]) - cumulated(lat, x[i,1])
     if x[i,2] < M.T
-        s += log(density(ind.latency, x[i,2]-x[i,1])) 
+        s += log(density(lat, x[i,2])) 
     end
-    s -= cumulated(ind.recov,x[i,3]-x[i,2])
+    rec = shift(ind.recov_delay, x[i,2]) * ind.recov
+    s -= cumulated(rec, x[i,3]) - cumulated(rec, x[i,2]) 
     if x[i,3] < M.T
-        s += log(density(ind.recov, x[i,3]-x[i,2])) 
+        s += log(density(rec, x[i,3])) 
     end
     return s
 end
