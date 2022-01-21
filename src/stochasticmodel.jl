@@ -28,9 +28,9 @@ struct IndividualSEIR{T,Rauto,Rinf,Rout,Rlat,Rrec}
     inf::Rinf
     out::Rout
     latency::Rlat
-    gen_lat::Rgenlat
+    lat_delay::Rgenlat
     recov::Rrec
-    gen_recov::Rgenrec
+    recov_delay::Rgenrec
 end
 
 
