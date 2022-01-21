@@ -22,7 +22,7 @@ IndividualSI{Rauto, Rinf}(θi, rout) where {Rauto, Rinf} = @views IndividualSI(�
 
 # An Individual SEIR with pseed, autoinf, inf, out, latency and recovery. Note that out infection is fixed
 
-struct IndividualSEIR{T,Rauto,Rinf,Rout,Rlat,Rrec}
+struct IndividualSEIR{T,Rauto,Rinf,Rout,Rlat,Rrec,Rgenlat,Rgenrec}
     pseed::T
     autoinf::Rauto
     inf::Rinf
@@ -34,9 +34,9 @@ struct IndividualSEIR{T,Rauto,Rinf,Rout,Rlat,Rrec}
 end
 
 
-IndividualSEIR{Rauto, Rinf, Rlat, Rrec}(θi, rout, rgenlat, rgenrec) where {Rauto, Rinf, Rlat, Rrec} = @views IndividualSEIR(θi[1], Rauto(θi[2:1+nparams(Rauto)]...), Rinf(θi[2+nparams(Rauto):1+nparams(Rauto)+nparams(Rinf)]...), rout,
-Rlat(θi[2+nparams(Rauto)+nparams(Rinf):1+nparams(Rauto)+nparams(Rinf)+nparams(Rlat)]...), rgenlat
-Rrec(θi[2+nparams(Rauto)+nparams(Rinf)+nparams(Rlat):1+nparams(Rauto)+nparams(Rinf)+nparams(Rlat)+nparams(Rrec)]...),rgenrec)
+IndividualSEIR{Rauto, Rinf, Rlat, Rrec}(θi, rout) where {Rauto, Rinf, Rlat, Rrec} = @views IndividualSEIR(θi[1], Rauto(θi[2:1+nparams(Rauto)]...), Rinf(θi[2+nparams(Rauto):1+nparams(Rauto)+nparams(Rinf)]...), rout[1],
+Rlat(θi[2+nparams(Rauto)+nparams(Rinf):1+nparams(Rauto)+nparams(Rinf)+nparams(Rlat)]...), rout[2],
+Rrec(θi[2+nparams(Rauto)+nparams(Rinf)+nparams(Rlat):1+nparams(Rauto)+nparams(Rinf)+nparams(Rlat)+nparams(Rrec)]...),rout[3])
 
 
 
@@ -47,6 +47,7 @@ struct StochasticModel{I,GT,Rout,VR} <: AbstractStochasticModel
     out::Rout
     V::VR
 end
+
 StochasticModel(::Type{I}, T, θ, G::GT, out::Rout, V::VR = fill(UnitRate(), ne(G))) where {I,GT,Rout,VR} = StochasticModel{I,GT,Rout,VR}(T,θ,G,out,V)
 
 individual(M::StochasticModel{I}, θi) where I = I(θi, M.out)
