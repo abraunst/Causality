@@ -51,7 +51,7 @@ end
 
 StochasticModel(::Type{I}, T, θ, G::GT, gen::Rgen, V::VR = fill(UnitRate(), ne(G))) where {I,GT,Rgen,VR} = StochasticModel{I,GT,Rout,VR}(T,θ,G,gen,V)
 
-individual(M::StochasticModel{I}, θi) where I = I(θi, M.out)
+individual(M::StochasticModel{I}, θi) where I = I(θi, M.gen)
 individual(M::StochasticModel, i::Int) = individual(M, @view M.θ[:,i])
 in_neighbors(M::StochasticModel, i::Int) = ((e.src, M.V[e.idx]) for e ∈ inedges(M.G, i))
 out_neighbors(M::StochasticModel, i::Int) = ((e.dst, M.V[e.idx]) for e ∈ outedges(M.G, i))
