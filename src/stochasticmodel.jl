@@ -16,7 +16,7 @@ struct IndividualSI{T,Rauto,Rinf,Rout}
 end
 
 IndividualSI{Rauto, Rinf, Rout}(θi, θgen) where {Rauto, Rinf, Rout} = @views IndividualSI(θi[1], Rauto(θi[2:1+nparams(Rauto)]...), Rinf(θi[2+nparams(Rauto):1+nparams(Rauto)+nparams(Rinf)]...), 
-Rout(θgen[1:nparams(Rout)])
+Rout(θgen[1:nparams(Rout)]...)
 )
 
 
@@ -37,11 +37,11 @@ end
 IndividualSEIR{Rauto, Rinf, Rout, Rlat, Rgenlat, Rrec, Rgenrec}(θi, θgen) where {Rauto, Rinf, Rout, Rlat, Rgenlat, Rrec, Rgenrec} = @views IndividualSEIR(θi[1],
     Rauto(θi[2:1+nparams(Rauto)]...),
     Rinf(θi[2+nparams(Rauto):1+nparams(Rauto)+nparams(Rinf)]...),
-    Rout(θgen[1:nparams(Rout)]),
+    Rout(θgen[1:nparams(Rout)]...),
     Rlat(θi[2+nparams(Rauto)+nparams(Rinf):1+nparams(Rauto)+nparams(Rinf)+nparams(Rlat)]...),
-    Rgenlat(θgen[nparams(Rout)+1:nparams(Rout)+nparams(Rgenlat)]),
+    Rgenlat(θgen[nparams(Rout)+1:nparams(Rout)+nparams(Rgenlat)]...),
     Rrec(θi[2+nparams(Rauto)+nparams(Rinf)+nparams(Rlat):1+nparams(Rauto)+nparams(Rinf)+nparams(Rlat)+nparams(Rrec)]...),
-    Rgenrec(θgen[nparams(Rout)+nparams(Rgenlat)+1:nparams(Rout)+nparams(Rgenlat)+nparams(Rgenrec)]))
+    Rgenrec(θgen[nparams(Rout)+nparams(Rgenlat)+1:nparams(Rout)+nparams(Rgenlat)+nparams(Rgenrec)]...))
 
 struct StochasticModel{I,GT,VR} <: AbstractStochasticModel
     T::Float64
@@ -53,7 +53,8 @@ end
 
 StochasticModel(::Type{I}, T, θ, G::GT, θgen, V::VR = fill(UnitRate(), ne(G))) where {I,GT,VR} = StochasticModel{I,GT,VR}(T,θ,G,θgen,V)
 
-individual(M::StochasticModel{I}, θi) where I = I(θi, M.gen)
+individual(M::StochasticModel{I}, θi) where I = I(θi, M.θgen)
+individual(M::StochasticModel{I}, i::Int, θgen) where I = I(M.θ[:,i], θgen)   #  MI RACCOMANDO CHIEDI!!
 individual(M::StochasticModel, i::Int) = individual(M, @view M.θ[:,i])
 in_neighbors(M::StochasticModel, i::Int) = ((e.src, M.V[e.idx]) for e ∈ inedges(M.G, i))
 out_neighbors(M::StochasticModel, i::Int) = ((e.dst, M.V[e.idx]) for e ∈ outedges(M.G, i))
