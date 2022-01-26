@@ -1,4 +1,4 @@
-using SparseArrays
+using SparseArrays, IndexedGraphs
 
 export StochasticModel, IndividualSEIR, IndividualSI, GenericStaticSM, GenericDynamicSM
 
