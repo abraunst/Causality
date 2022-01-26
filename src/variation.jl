@@ -14,7 +14,7 @@ function logQi(M::StochasticModel{<:IndividualSEIR}, i, ind, x::Matrix{Float64})
         sSE = density(ind.autoinf, x[i,1])
         for (j,rji) ∈ in_neighbors(M, i)
             if x[j,2] < x[i,1] 
-                inf = ind.inf * rji * shift(individual(M,j).out,x[j,2])
+                inf = ind.inf * rji * shift(ind.out,x[j,2]) # we use ind.out because all the out are the same
                 s -= cumulated(inf, min(x[i,1],x[j,3])) - cumulated(inf, x[j,2])
                 if x[i,1] < x[j,3]
                     sSE += density(inf,x[i,1])
@@ -101,9 +101,10 @@ function descend!(Mp, O; M = copy(Mp),
             sample!(x)
             F = (logQ(x, M) - logQ(x, Mp) - logO(x, O, Mp)) / numsamples
             gradient!(dθ[ti], x, M)
-            ForwardDiff.gradient!(dθgen[ti], th->logQgen(x, M, th), M.θgen)
             Dθ[ti] .+= F .* dθ[ti]
-            Dθgen[ti] .+= F .* dθgen[ti]
+            ForwardDiff.gradient!(dθgen[ti], th->logQgen(x, M, th), M.θgen)
+            Dθgen[ti] .+= (F .* dθgen[ti] - ForwardDiff.gradient(th -> logQgen(x, Mp, th), Mp.θgen))
+            #@show Dθgen[ti] Dθ[ti]
             avF[ti] += F
         end
         for ti = 2:nt
@@ -112,9 +113,9 @@ function descend!(Mp, O; M = copy(Mp),
             Dθgen[1] .+= Dθgen[ti]
         end        
         step!(θ, Dθ[1], descender)
-        step!(θgen, Dθgen[1], descender)
+        #step!(θgen, Dθgen[1], descender)
         θ .= clamp.(θ, θmin, θmax) 
-        θgen .= clamp.(θgen, θgenmin, θgenmax) 
+        #θgen .= clamp.(θgen, θgenmin, θgenmax) 
         ProgressMeter.next!(pr, showvalues=[(:F,sum(avF))])
     end
     sum(avF)
