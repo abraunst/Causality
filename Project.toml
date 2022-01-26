@@ -1,6 +1,6 @@
 name = "Causality"
 uuid = "943c2df0-3341-4665-8895-8aff0dd63d80"
-authors = ["ab <alfredo.braunstein@polito.it>"]
+authors = ["Alfredo Braunstein <alfredo.braunstein@polito.it>", "Matteo Mariani <matteo.mariani@polito.it>"]
 version = "0.1.0"
 
 [deps]
