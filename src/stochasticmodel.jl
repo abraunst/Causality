@@ -2,6 +2,7 @@ using SparseArrays, IndexedGraphs
 
 export StochasticModel
 
+
 struct StochasticModel{I,GT,VT}
     T::Float64
     θ::Matrix{Float64}

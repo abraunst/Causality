@@ -1,4 +1,4 @@
-using SparseArrays, IndexedGraphs, DataStructures, ProgressMeter, SparseArrays, TrackingHeaps
+using SparseArrays, IndexedGraphs
 
 export  Sampler, GenerativeSI, InferentialSI
 
@@ -14,7 +14,6 @@ struct IndividualSI{P,Rauto,Rinf,Rout}
     inf::Rinf
     out::Rout
 end
-
 
 
 struct InferentialSI{Rauto, Rinf, Rout} <: SI end

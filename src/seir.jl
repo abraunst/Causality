@@ -1,4 +1,4 @@
-using SparseArrays, IndexedGraphs, DataStructures, ProgressMeter, SparseArrays, TrackingHeaps
+using SparseArrays, IndexedGraphs
 
 export  GenerativeSEIR, InferentialSEIR
 
@@ -18,6 +18,7 @@ struct IndividualSEIR{P,Rauto,Rinf,Rout,Rlat,Rrec,Rgenlat,Rgenrec}
     recov::Rrec
     recov_delay::Rgenrec
 end
+
 
 struct InferentialSEIR{Rauto, Rinf, Rout, Rlat, Rgenlat, Rrec, Rgenrec} <: SEIR end
 
@@ -125,5 +126,3 @@ logO(x, O, M::StochasticModel{<:SEIR}) = sum(log(p + ((x[i,2] < t < x[i,3]) == s
 
 n_states(M::StochasticModel{<:SEIR}) = 4
 trajectorysize(M::StochasticModel{<:SEIR}) = (nv(M.G), 3)
-
-
