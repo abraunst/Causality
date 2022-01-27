@@ -1,4 +1,4 @@
-using SparseArrays, IndexedGraphs
+using SparseArrays, IndexedGraphs, DataStructures, ProgressMeter, SparseArrays, TrackingHeaps
 
 export  Sampler, GenerativeSI, InferentialSI
 

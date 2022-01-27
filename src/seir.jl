@@ -1,4 +1,4 @@
-using SparseArrays, IndexedGraphs
+using SparseArrays, IndexedGraphs, DataStructures, ProgressMeter, SparseArrays, TrackingHeaps
 
 export  GenerativeSEIR, InferentialSEIR
 
@@ -87,6 +87,7 @@ function Sampler(M::StochasticModel{<:SEIR})  #0=S  1=E  2=I  3=R
         return x
     end
 end
+
 
 function logQi(M::StochasticModel{<:SEIR}, i, ind, x::Matrix{Float64})     #x[i] = (tE, tI, tR)
     s = 0.0
