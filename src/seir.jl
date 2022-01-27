@@ -99,7 +99,7 @@ function logQi(M::StochasticModel{<:SEIR}, i, ind, x::Matrix{Float64})     #x[i]
         s -= cumulated(ind.autoinf, x[i,1])
         sSE = density(ind.autoinf, x[i,1])
         for (j,rji) ∈ in_neighbors(M, i)
-            if x[j,2] < x[i,1] 
+            if x[j,2] < x[i,1]
                 inf = ind.inf * rji * shift(ind.out,x[j,2]) # we use ind.out because all the out are the same
                 s -= cumulated(inf, min(x[i,1],x[j,3])) - cumulated(inf, x[j,2])
                 if x[i,1] < x[j,3]
@@ -114,12 +114,12 @@ function logQi(M::StochasticModel{<:SEIR}, i, ind, x::Matrix{Float64})     #x[i]
     lat = shift(ind.lat_delay, x[i,1]) * ind.latency
     s -= cumulated(lat, x[i,2]) - cumulated(lat, x[i,1])
     if x[i,2] < M.T
-        s += log(density(lat, x[i,2])) 
+        s += log(density(lat, x[i,2]))
     end
     rec = shift(ind.recov_delay, x[i,2]) * ind.recov
-    s -= cumulated(rec, x[i,3]) - cumulated(rec, x[i,2]) 
+    s -= cumulated(rec, x[i,3]) - cumulated(rec, x[i,2])
     if x[i,3] < M.T
-        s += log(density(rec, x[i,3])) 
+        s += log(density(rec, x[i,3]))
     end
     return s
 end

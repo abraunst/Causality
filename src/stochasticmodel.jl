@@ -2,11 +2,7 @@ using SparseArrays, IndexedGraphs
 
 export StochasticModel
 
-abstract type AbstractStochasticModel end
-
-abstract type Individual end
-
-struct StochasticModel{I,GT,VT} <: AbstractStochasticModel
+struct StochasticModel{I,GT,VT}
     T::Float64
     θ::Matrix{Float64}
     G::GT
