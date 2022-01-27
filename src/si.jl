@@ -8,8 +8,8 @@ export  Sampler, GenerativeSI, InferencialSI
 
 abstract type SI end
 
-struct IndividualSI{Rauto,Rinf,Rout}
-    pseed::Float64
+struct IndividualSI{P,Rauto,Rinf,Rout}
+    pseed::P
     autoinf::Rauto
     inf::Rinf
     out::Rout

@@ -8,8 +8,8 @@ abstract type SEIR end
 #θi = pseed,autoinf,inf,latency,recovery
 #θgen = out, lat_delay, recov_delay
 
-struct IndividualSEIR{Rauto,Rinf,Rout,Rlat,Rrec,Rgenlat,Rgenrec}
-    pseed::Float64
+struct IndividualSEIR{P,Rauto,Rinf,Rout,Rlat,Rrec,Rgenlat,Rgenrec}
+    pseed::P
     autoinf::Rauto
     inf::Rinf
     out::Rout
