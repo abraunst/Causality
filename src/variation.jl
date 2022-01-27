@@ -46,7 +46,7 @@ function logQi(M::StochasticModel{<:IndividualSI}, i, ind, x)
     s2 = density(ind.autoinf, x[i])
     for (j,rji) ∈ in_neighbors(M, i)
         if x[j] < x[i]
-            inf = ind.inf * rji * shift(individual(M,j).out,x[j])
+            inf = ind.inf * rji * shift(ind.out,x[j])  # we use ind.out because all the out are the same
             s -= cumulated(inf, x[i]) - cumulated(inf, x[j])
             s2 += density(inf, x[i])
         end
@@ -72,10 +72,13 @@ logO(x, O, M::StochasticModel{<:IndividualSEIR}) = sum(log(p + ((x[i,2] < t < x[
 function descend!(Mp, O; M = copy(Mp),
         numiters = 200, numsamples = 1000, ε = 1e-10,
         descender = AdamDescender(M.θ, 1e-3),
+        hyperdescender = AdamDescender(M.θgen, 1e-3),
         θmin = 1e-5,
         θmax = 1-1e-5,
         θgenmin = 1e-5,
-        θgenmax = 1-1e-5)
+        θgenmax = 1-1e-5,
+        learnhyper=1
+    )
     
     number_of_states = n_states(M) 
     N = nv(M.G)
@@ -102,9 +105,9 @@ function descend!(Mp, O; M = copy(Mp),
             F = (logQ(x, M) - logQ(x, Mp) - logO(x, O, Mp)) / numsamples
             gradient!(dθ[ti], x, M)
             Dθ[ti] .+= F .* dθ[ti]
-            ForwardDiff.gradient!(dθgen[ti], th->logQgen(x, M, th), M.θgen)
-            Dθgen[ti] .+= (F .* dθgen[ti] - ForwardDiff.gradient(th -> logQgen(x, Mp, th), Mp.θgen))
-            #@show Dθgen[ti] Dθ[ti]
+            ForwardDiff.gradient!(dθgen[ti], th->logQgen(x, M, th), θgen)
+            Dθgen[ti] .+= (F .* dθgen[ti] .- ForwardDiff.gradient(th -> logQgen(x, Mp, th), θgen))
+            #@show Dθ[ti] Dθgen[ti]
             avF[ti] += F
         end
         for ti = 2:nt
@@ -113,9 +116,11 @@ function descend!(Mp, O; M = copy(Mp),
             Dθgen[1] .+= Dθgen[ti]
         end        
         step!(θ, Dθ[1], descender)
-        #step!(θgen, Dθgen[1], descender)
         θ .= clamp.(θ, θmin, θmax) 
-        #θgen .= clamp.(θgen, θgenmin, θgenmax) 
+        if mod(t,learnhyper) == 0
+            step!(θgen, Dθgen[1], hyperdescender)
+            θgen .= clamp.(θgen, θgenmin, θgenmax) 
+        end
         ProgressMeter.next!(pr, showvalues=[(:F,sum(avF))])
     end
     sum(avF)
