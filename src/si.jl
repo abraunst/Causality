@@ -87,7 +87,7 @@ function logQi(M::StochasticModel{<:SI}, i, ind, x)
     return s
 end
 
-logO(x, O, M::StochasticModel{<:IndividualSI}) = sum(log(p + ((x[i] < t) == s)*(1-2p)) for (i,s,t,p) in O; init=0.0)
+logO(x, O, M::StochasticModel{<:SI}) = sum(log(p + ((x[i] < t) == s)*(1-2p)) for (i,s,t,p) in O; init=0.0)
 
 n_states(M::StochasticModel{<:SI}) = 2
 trajectorysize(M::StochasticModel{<:SI}) = (nv(M.G))
