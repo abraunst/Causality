@@ -1,6 +1,6 @@
-using SparseArrays, IndexedGraphs
+using SparseArrays, IndexedGraphs, DataStructures, ProgressMeter, SparseArrays, TrackingHeaps
 
-export  GenerativeSI, InferencialSI
+export  Sampler, GenerativeSI, InferencialSI
 
 abstract type IndividualSI end
 
@@ -36,6 +36,40 @@ GenerativeSI(θgen[1],
              UnitRate(), 
              Rout(θgen[2+nparams(Rauto):1+nparams(Rauto)+nparams(Rout)]...)
 )
+
+#General functions for SI
+
+compatibility(x, O, Mp::StochasticModel{<:IndividualSI}) = all((x[i,1] < t) == s for (i,s,t,p) in O)
+
+
+function Sampler(M::StochasticModel{<:IndividualSI})
+    N::Int = nv(M.G)
+    s::BitVector = falses(N)
+    Q::TrackingHeap{Int, Float64, 2, MinHeapOrder, NoTrainingWheels} = TrackingHeap(Float64, S=NoTrainingWheels)
+    function sample!(x)
+        @assert N == length(x)
+        empty!(Q)
+        x .= M.T
+        s .= false
+        for i in eachindex(x)
+            ind = individual(M, i)
+            Q[i] = min(M.T, rand() < ind.pseed ? zero(M.T) : delay(ind.autoinf, zero(M.T)))
+        end
+        while !isempty(Q)
+            i, t = pop!(Q)
+            s[i] = true
+            x[i] = t
+            for (j,rij) ∈ out_neighbors(M,i)
+                if !s[j]
+                    Q[j] = min(Q[j], delay(shift(individual(M,i).out,t) * rij * individual(M,j).inf, t))
+                end
+            end
+        end
+        return x
+    end
+end
+
+
 
 n_states(M::StochasticModel{<: IndividualSI}) = 2
 trajectorysize(M::StochasticModel{<: IndividualSI}) = (nv(M.G))
