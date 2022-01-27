@@ -1,15 +1,15 @@
 using SparseArrays, IndexedGraphs, DataStructures, ProgressMeter, SparseArrays, TrackingHeaps
 
-export  GenerativeSEIR, InferencialSEIR
+export  GenerativeSEIR, InferentialSEIR
 
-abstract type IndividualSEIR end
+abstract type SEIR end
 
 # For the inferencial SEIR
 #θi = pseed,autoinf,inf,latency,recovery
 #θgen = out, lat_delay, recov_delay
 
-struct InferencialSEIR{T,Rauto,Rinf,Rout,Rlat,Rrec,Rgenlat,Rgenrec} <: IndividualSEIR
-    pseed::T
+struct IndividualSEIR{Rauto,Rinf,Rout,Rlat,Rrec,Rgenlat,Rgenrec}
+    pseed::Float64
     autoinf::Rauto
     inf::Rinf
     out::Rout
@@ -19,7 +19,9 @@ struct InferencialSEIR{T,Rauto,Rinf,Rout,Rlat,Rrec,Rgenlat,Rgenrec} <: Individua
     recov_delay::Rgenrec
 end
 
-InferencialSEIR{Rauto, Rinf, Rout, Rlat, Rgenlat, Rrec, Rgenrec}(θi, θgen) where {Rauto, Rinf, Rout, Rlat, Rgenlat, Rrec, Rgenrec} = @views InferencialSEIR(θi[1],
+struct InferentialSEIR{Rauto, Rinf, Rout, Rlat, Rgenlat, Rrec, Rgenrec} <: SEIR end
+
+individual(::Type{InferentialSEIR{Rauto, Rinf, Rout, Rlat, Rgenlat, Rrec, Rgenrec}}, θi, θgen) where {Rauto, Rinf, Rout, Rlat, Rgenlat, Rrec, Rgenrec} = @views IndividualSEIR(θi[1],
     Rauto(θi[2:1+nparams(Rauto)]...),
     Rinf(θi[2+nparams(Rauto):1+nparams(Rauto)+nparams(Rinf)]...),
     Rout(θgen[1:nparams(Rout)]...),
@@ -32,19 +34,10 @@ InferencialSEIR{Rauto, Rinf, Rout, Rlat, Rgenlat, Rrec, Rgenrec}(θi, θgen) whe
 #θi = inf, latency, recovery
 #θgen = pseed, autoinf, out, lat_delay, recov_delay
 
-struct GenerativeSEIR{T,Rauto,Rinf,Rout,Rlat,Rrec,Rgenlat,Rgenrec} <: IndividualSEIR
-    pseed::T
-    autoinf::Rauto 
-    inf::Rinf 
-    out::Rout 
-    latency::Rlat 
-    lat_delay::Rgenlat
-    recov::Rrec 
-    recov_delay::Rgenrec
-end
+struct GenerativeSEIR{Rauto, Rinf, Rout, Rlat, Rgenlat, Rrec, Rgenrec} <: SEIR end
 
-GenerativeSEIR{Rauto, Rout, Rgenlat, Rgenrec}(θgen) where {Rauto, Rout, Rgenlat, Rgenrec} = 
-    @views GenerativeSEIR(θgen[1],
+individual(::Type{GenerativeSEIR{Rauto, Rout, Rgenlat, Rgenrec}}, θgen) where {Rauto, Rout, Rgenlat, Rgenrec} = @views IndividualSEIR(
+    θgen[1],
     Rauto(θgen[2:1+nparams(Rauto)]...),
     UnitRate(),
     Rout(θgen[2+nparams(Rauto):1+nparams(Rout)+nparams(Rauto)]...),
@@ -55,10 +48,10 @@ GenerativeSEIR{Rauto, Rout, Rgenlat, Rgenrec}(θgen) where {Rauto, Rout, Rgenlat
 
 #General functions for SEIR
 
-compatibility(x, O, Mp::StochasticModel{<:IndividualSEIR}) = all((x[i,2]<t<x[i,3]) == s for (i,s,t,p) in O)
+compatibility(x, O, Mp::StochasticModel{<:SEIR}) = all((x[i,2]<t<x[i,3]) == s for (i,s,t,p) in O)
 
 
-function Sampler(M::StochasticModel{<:IndividualSEIR})  #0=S  1=E  2=I  3=R
+function Sampler(M::StochasticModel{<:SEIR})  #0=S  1=E  2=I  3=R
     N::Int = nv(M.G)
     s::Vector{Int} = zeros(Int, N)
     Q::TrackingHeap{Int, Float64, 2, MinHeapOrder, NoTrainingWheels} = TrackingHeap(Float64, S=NoTrainingWheels)
@@ -97,7 +90,43 @@ function Sampler(M::StochasticModel{<:IndividualSEIR})  #0=S  1=E  2=I  3=R
     end
 end
 
-n_states(M::StochasticModel{<: IndividualSEIR}) = 4
-trajectorysize(M::StochasticModel{<: IndividualSEIR}) = (nv(M.G), 3)
+function logQi(M::StochasticModel{<:SEIR}, i, ind, x::Matrix{Float64})     #x[i] = (tE, tI, tR)
+    s = 0.0
+    if iszero(x[i,1])
+        s += log(ind.pseed)
+    else
+        s += log(1-ind.pseed)
+        s -= cumulated(ind.autoinf, x[i,1])
+        sSE = density(ind.autoinf, x[i,1])
+        for (j,rji) ∈ in_neighbors(M, i)
+            if x[j,2] < x[i,1] 
+                inf = ind.inf * rji * shift(ind.out,x[j,2]) # we use ind.out because all the out are the same
+                s -= cumulated(inf, min(x[i,1],x[j,3])) - cumulated(inf, x[j,2])
+                if x[i,1] < x[j,3]
+                    sSE += density(inf,x[i,1])
+                end
+            end
+        end
+        if x[i,1] < M.T
+            s += log(sSE)
+        end
+    end
+    lat = shift(ind.lat_delay, x[i,1]) * ind.latency
+    s -= cumulated(lat, x[i,2]) - cumulated(lat, x[i,1])
+    if x[i,2] < M.T
+        s += log(density(lat, x[i,2])) 
+    end
+    rec = shift(ind.recov_delay, x[i,2]) * ind.recov
+    s -= cumulated(rec, x[i,3]) - cumulated(rec, x[i,2]) 
+    if x[i,3] < M.T
+        s += log(density(rec, x[i,3])) 
+    end
+    return s
+end
+
+logO(x, O, M::StochasticModel{<:IndividualSEIR}) = sum(log(p + ((x[i,2] < t < x[i,3]) == s)*(1-2p)) for (i,s,t,p) in O; init=0.0)
+
+n_states(M::StochasticModel{<:SEIR}) = 4
+trajectorysize(M::StochasticModel{<:SEIR}) = (nv(M.G), 3)
 
 

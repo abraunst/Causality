@@ -4,58 +4,6 @@ import Enzyme, ForwardDiff
 export descend!, logQ
 
 
-function logQi(M::StochasticModel{<:IndividualSEIR}, i, ind, x::Matrix{Float64})     #x[i] = (tE, tI, tR)
-    s = 0.0
-    if iszero(x[i,1])
-        s += log(ind.pseed)
-    else
-        s += log(1-ind.pseed)
-        s -= cumulated(ind.autoinf, x[i,1])
-        sSE = density(ind.autoinf, x[i,1])
-        for (j,rji) ∈ in_neighbors(M, i)
-            if x[j,2] < x[i,1] 
-                inf = ind.inf * rji * shift(ind.out,x[j,2]) # we use ind.out because all the out are the same
-                s -= cumulated(inf, min(x[i,1],x[j,3])) - cumulated(inf, x[j,2])
-                if x[i,1] < x[j,3]
-                    sSE += density(inf,x[i,1])
-                end
-            end
-        end
-        if x[i,1] < M.T
-            s += log(sSE)
-        end
-    end
-    lat = shift(ind.lat_delay, x[i,1]) * ind.latency
-    s -= cumulated(lat, x[i,2]) - cumulated(lat, x[i,1])
-    if x[i,2] < M.T
-        s += log(density(lat, x[i,2])) 
-    end
-    rec = shift(ind.recov_delay, x[i,2]) * ind.recov
-    s -= cumulated(rec, x[i,3]) - cumulated(rec, x[i,2]) 
-    if x[i,3] < M.T
-        s += log(density(rec, x[i,3])) 
-    end
-    return s
-end
-
-
-function logQi(M::StochasticModel{<:IndividualSI}, i, ind, x)
-    iszero(x[i]) && return log(ind.pseed)
-    s = log(1-ind.pseed)
-    s -= cumulated(ind.autoinf, x[i])
-    s2 = density(ind.autoinf, x[i])
-    for (j,rji) ∈ in_neighbors(M, i)
-        if x[j] < x[i]
-            inf = ind.inf * rji * shift(ind.out,x[j])  # we use ind.out because all the out are the same
-            s -= cumulated(inf, x[i]) - cumulated(inf, x[j])
-            s2 += density(inf, x[i])
-        end
-    end
-    if x[i] < M.T
-        s += log(s2)
-    end
-    return s
-end
 
 function logQ(x, M::StochasticModel)
     sum(logQi(M, i, individual(M,i), x) for i = 1:size(x,1); init=0.0)
@@ -65,9 +13,7 @@ function logQgen(x, M::StochasticModel, θgen)
     sum(logQi(M, i, individual(M, i, θgen), x) for i = 1:size(x,1); init=0.0)
 end
 
-logO(x, O, M::StochasticModel{<:IndividualSI}) = sum(log(p + ((x[i] < t) == s)*(1-2p)) for (i,s,t,p) in O; init=0.0)
 
-logO(x, O, M::StochasticModel{<:IndividualSEIR}) = sum(log(p + ((x[i,2] < t < x[i,3]) == s)*(1-2p)) for (i,s,t,p) in O; init=0.0)
 
 function descend!(Mp, O; M = copy(Mp),
         numiters = 200, numsamples = 1000, ε = 1e-10,

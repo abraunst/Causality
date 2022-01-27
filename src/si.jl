@@ -2,47 +2,46 @@ using SparseArrays, IndexedGraphs, DataStructures, ProgressMeter, SparseArrays, 
 
 export  Sampler, GenerativeSI, InferencialSI
 
-abstract type IndividualSI end
-
 # For the inferencial SI
 #θi = pseed,autoinf,inf
 #θgen = out
 
-struct InferencialSI{T,Rauto,Rinf,Rout}
-    pseed::T
+abstract type SI end
+
+struct IndividualSI{Rauto,Rinf,Rout}
+    pseed::Float64
     autoinf::Rauto
     inf::Rinf
     out::Rout
 end
 
-InferencialSI{Rauto, Rinf, Rout}(θi, θgen) where {Rauto, Rinf, Rout} = @views InferencialSI(θi[1], Rauto(θi[2:1+nparams(Rauto)]...), Rinf(θi[2+nparams(Rauto):1+nparams(Rauto)+nparams(Rinf)]...), 
-Rout(θgen[1:nparams(Rout)]...)
-)
+
+struct InferencialSI{Rauto, Rinf, Rout} <: SI end
+
+individual(::Type{InferencialSI{Rauto, Rinf, Rout}}, θi, θgen) where {Rauto, Rinf, Rout} = @views IndividualSI(
+    θi[1],
+    Rauto(θi[2:1+nparams(Rauto)]...),
+    Rinf(θi[2+nparams(Rauto):1+nparams(Rauto)+nparams(Rinf)]...),
+    Rout(θgen[1:nparams(Rout)]...))
 
 # For the generative SI
 #θi = inf
 #θgen = pseed, autoinf, out
 
-struct GenerativeSI{T,Rauto,Rinf,Rout}
-    pseed::T
-    autoinf::Rauto
-    inf::Rinf
-    out::Rout
-end
+struct GenerativeSI{Rauto, Rout} <: SI end
 
-GenerativeSI{Rauto, Rout}(θgen) where {Rauto, Rinf, Rout} = @views 
-GenerativeSI(θgen[1], 
-             Rauto(θgen[2:1+nparams(Rauto)]...), 
-             UnitRate(), 
-             Rout(θgen[2+nparams(Rauto):1+nparams(Rauto)+nparams(Rout)]...)
-)
+individual(::Type{GenerativeSI{Rauto, Rout}}, θgen) where {Rauto, Rout} = @views IndividualSI(
+    θgen[1],
+    Rauto(θgen[2:1+nparams(Rauto)]...),
+    UnitRate(),
+    Rout(θgen[2+nparams(Rauto):1+nparams(Rauto)+nparams(Rout)]...))
 
 #General functions for SI
 
-compatibility(x, O, Mp::StochasticModel{<:IndividualSI}) = all((x[i,1] < t) == s for (i,s,t,p) in O)
+compatibility(x, O, Mp::StochasticModel{<:SI}) = all((x[i,1] < t) == s for (i,s,t,p) in O)
 
 
-function Sampler(M::StochasticModel{<:IndividualSI})
+function Sampler(M::StochasticModel{<:SI})
     N::Int = nv(M.G)
     s::BitVector = falses(N)
     Q::TrackingHeap{Int, Float64, 2, MinHeapOrder, NoTrainingWheels} = TrackingHeap(Float64, S=NoTrainingWheels)
@@ -70,6 +69,25 @@ function Sampler(M::StochasticModel{<:IndividualSI})
 end
 
 
+function logQi(M::StochasticModel{<:SI}, i, ind, x)
+    iszero(x[i]) && return log(ind.pseed)
+    s = log(1-ind.pseed)
+    s -= cumulated(ind.autoinf, x[i])
+    s2 = density(ind.autoinf, x[i])
+    for (j,rji) ∈ in_neighbors(M, i)
+        if x[j] < x[i]
+            inf = ind.inf * rji * shift(ind.out,x[j])  # we use ind.out because all the out are the same
+            s -= cumulated(inf, x[i]) - cumulated(inf, x[j])
+            s2 += density(inf, x[i])
+        end
+    end
+    if x[i] < M.T
+        s += log(s2)
+    end
+    return s
+end
 
-n_states(M::StochasticModel{<: IndividualSI}) = 2
-trajectorysize(M::StochasticModel{<: IndividualSI}) = (nv(M.G))
+logO(x, O, M::StochasticModel{<:IndividualSI}) = sum(log(p + ((x[i] < t) == s)*(1-2p)) for (i,s,t,p) in O; init=0.0)
+
+n_states(M::StochasticModel{<:SI}) = 2
+trajectorysize(M::StochasticModel{<:SI}) = (nv(M.G))
