@@ -17,7 +17,6 @@ end
 
 
 struct InferentialSI{Rauto, Rinf, Rout} <: SI end
-
 individual(::Type{InferentialSI{Rauto, Rinf, Rout}}, θi, θgen) where {Rauto, Rinf, Rout} = @views IndividualSI(
     θi[1],
     Rauto(θi[2:1+nparams(Rauto)]...),
