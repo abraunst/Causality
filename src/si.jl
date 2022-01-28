@@ -1,10 +1,10 @@
 using SparseArrays, IndexedGraphs, DataStructures, ProgressMeter, SparseArrays, TrackingHeaps
 
-export  Sampler, GenerativeSI, InferencialSI
+export  Sampler, GenerativeSI, InferentialSI
 
-# For the inferencial SI
-#θi = pseed,autoinf,inf
-#θgen = out
+# For the SI
+#θi = pseed,autoinf, inf_in
+#θgen = pseed, autoinf, inf_out
 
 abstract type SI end
 
@@ -16,21 +16,20 @@ struct IndividualSI{P,Rauto,Rinf,Rout}
 end
 
 
-struct InferencialSI{Rauto, Rinf, Rout} <: SI end
 
-individual(::Type{InferencialSI{Rauto, Rinf, Rout}}, θi, θgen) where {Rauto, Rinf, Rout} = @views IndividualSI(
+struct InferentialSI{Rauto, Rinf, Rout} <: SI end
+
+individual(::Type{InferentialSI{Rauto, Rinf, Rout}}, θi, θgen) where {Rauto, Rinf, Rout} = @views IndividualSI(
     θi[1],
     Rauto(θi[2:1+nparams(Rauto)]...),
     Rinf(θi[2+nparams(Rauto):1+nparams(Rauto)+nparams(Rinf)]...),
-    Rout(θgen[1:nparams(Rout)]...))
+    Rout(θgen[2+nparams(Rauto):1+nparams(Rauto)+nparams(Rout)]...))
 
-# For the generative SI
-#θi = inf
-#θgen = pseed, autoinf, out
+
 
 struct GenerativeSI{Rauto, Rout} <: SI end
 
-individual(::Type{GenerativeSI{Rauto, Rout}}, θgen) where {Rauto, Rout} = @views IndividualSI(
+individual(::Type{GenerativeSI{Rauto, Rout}}, θi, θgen) where {Rauto, Rout} = @views IndividualSI(
     θgen[1],
     Rauto(θgen[2:1+nparams(Rauto)]...),
     UnitRate(),

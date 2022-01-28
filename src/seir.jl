@@ -4,9 +4,9 @@ export  GenerativeSEIR, InferentialSEIR
 
 abstract type SEIR end
 
-# For the inferencial SEIR
+# For the SEIR model
 #θi = pseed,autoinf,inf,latency,recovery
-#θgen = out, lat_delay, recov_delay
+#θgen = pseed, autoinf, out, lat_delay, recov_delay
 
 struct IndividualSEIR{P,Rauto,Rinf,Rout,Rlat,Rrec,Rgenlat,Rgenrec}
     pseed::P
@@ -24,19 +24,16 @@ struct InferentialSEIR{Rauto, Rinf, Rout, Rlat, Rgenlat, Rrec, Rgenrec} <: SEIR 
 individual(::Type{InferentialSEIR{Rauto, Rinf, Rout, Rlat, Rgenlat, Rrec, Rgenrec}}, θi, θgen) where {Rauto, Rinf, Rout, Rlat, Rgenlat, Rrec, Rgenrec} = @views IndividualSEIR(θi[1],
     Rauto(θi[2:1+nparams(Rauto)]...),
     Rinf(θi[2+nparams(Rauto):1+nparams(Rauto)+nparams(Rinf)]...),
-    Rout(θgen[1:nparams(Rout)]...),
+    Rout(θgen[2+nparams(Rauto):1+nparams(Rout)+nparams(Rauto)]...),
     Rlat(θi[2+nparams(Rauto)+nparams(Rinf):1+nparams(Rauto)+nparams(Rinf)+nparams(Rlat)]...),
-    Rgenlat(θgen[nparams(Rout)+1:nparams(Rout)+nparams(Rgenlat)]...),
+    Rgenlat(θgen[2+nparams(Rout)+nparams(Rauto):1+nparams(Rout)+nparams(Rauto)+nparams(Rgenlat)]...),
     Rrec(θi[2+nparams(Rauto)+nparams(Rinf)+nparams(Rlat):1+nparams(Rauto)+nparams(Rinf)+nparams(Rlat)+nparams(Rrec)]...),
-    Rgenrec(θgen[nparams(Rout)+nparams(Rgenlat)+1:nparams(Rout)+nparams(Rgenlat)+nparams(Rgenrec)]...))
+    Rgenrec(θgen[2+nparams(Rout)+nparams(Rauto)+nparams(Rgenlat):1+nparams(Rout)+nparams(Rauto)+nparams(Rgenlat)+nparams(Rgenrec)]...))
 
-# For the generative SEIR
-#θi = inf, latency, recovery
-#θgen = pseed, autoinf, out, lat_delay, recov_delay
 
 struct GenerativeSEIR{Rauto, Rinf, Rout, Rlat, Rgenlat, Rrec, Rgenrec} <: SEIR end
 
-individual(::Type{GenerativeSEIR{Rauto, Rout, Rgenlat, Rgenrec}}, θgen) where {Rauto, Rout, Rgenlat, Rgenrec} = @views IndividualSEIR(
+individual(::Type{GenerativeSEIR{Rauto, Rout, Rgenlat, Rgenrec}}, θi, θgen) where {Rauto, Rout, Rgenlat, Rgenrec} = @views IndividualSEIR(
     θgen[1],
     Rauto(θgen[2:1+nparams(Rauto)]...),
     UnitRate(),
