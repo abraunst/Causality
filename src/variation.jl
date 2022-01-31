@@ -42,6 +42,7 @@ function descend!(Mp, O; M = copy(Mp),
     for t = 1:numiters
         for ti=1:nt
             Dθ[ti] .= 0.0
+            Dθgen[ti] .= 0.0
             avF[ti] = 0.0
         end
         Threads.@threads for s = 1:numsamples
@@ -53,14 +54,15 @@ function descend!(Mp, O; M = copy(Mp),
             Dθ[ti] .+= F .* dθ[ti]
             ForwardDiff.gradient!(dθgen[ti], th->logQgen(x, M, th), θgen)
             Dθgen[ti] .+= (F .* dθgen[ti] .- ForwardDiff.gradient(th -> logQgen(x, Mp, th), θgen))
-            #@show Dθ[ti] Dθgen[ti]
+            #@show Dθgen[ti] dθgen[ti]
             avF[ti] += F
         end
         for ti = 2:nt
             any(isnan.(Dθ[ti])) && (@show sum(avF) t; return M)
             Dθ[1] .+= Dθ[ti]
             Dθgen[1] .+= Dθgen[ti]
-        end        
+        end
+        #@show Dθgen[1]
         step!(θ, Dθ[1], descender)
         θ .= clamp.(θ, θmin, θmax) 
         if mod(t,learnhyper) == 0
