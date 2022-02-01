@@ -22,27 +22,27 @@ end
 
 struct InferentialSEIR{Rauto, Rinf, Rout, Rlat, Rgenlat, Rrec, Rgenrec} <: SEIR end
 
-individual(::Type{InferentialSEIR{Rauto, Rinf, Rout, Rlat, Rgenlat, Rrec, Rgenrec}}, θi, θgen) where {Rauto, Rinf, Rout, Rlat, Rgenlat, Rrec, Rgenrec} = @views IndividualSEIR(θi[1],
-    Rauto(θi[2:1+nparams(Rauto)]...),
-    Rinf(θi[2+nparams(Rauto):1+nparams(Rauto)+nparams(Rinf)]...),
-    Rout(θgen[2+nparams(Rauto):1+nparams(Rout)+nparams(Rauto)]...),
-    Rlat(θi[2+nparams(Rauto)+nparams(Rinf):1+nparams(Rauto)+nparams(Rinf)+nparams(Rlat)]...),
-    Rgenlat(θgen[2+nparams(Rout)+nparams(Rauto):1+nparams(Rout)+nparams(Rauto)+nparams(Rgenlat)]...),
-    Rrec(θi[2+nparams(Rauto)+nparams(Rinf)+nparams(Rlat):1+nparams(Rauto)+nparams(Rinf)+nparams(Rlat)+nparams(Rrec)]...),
-    Rgenrec(θgen[2+nparams(Rout)+nparams(Rauto)+nparams(Rgenlat):1+nparams(Rout)+nparams(Rauto)+nparams(Rgenlat)+nparams(Rgenrec)]...))
-
+@individual InferentialSEIR{Rauto, Rinf, Rout, Rlat, Rgenlat, Rrec, Rgenrec}(θi, θgen) =
+    IndividualSEIR(θi,
+        Rauto(θi),
+        Rinf(θi),
+        Rout(θgen),
+        Rlat(θi),
+        Rgenlat(θgen),
+        Rrec(θi),
+        Rgenrec(θgen))
 
 struct GenerativeSEIR{Rauto, Rinf, Rout, Rlat, Rgenlat, Rrec, Rgenrec} <: SEIR end
 
-individual(::Type{GenerativeSEIR{Rauto, Rout, Rgenlat, Rgenrec}}, θi, θgen) where {Rauto, Rout, Rgenlat, Rgenrec} = @views IndividualSEIR(
-    θgen[1],
-    Rauto(θgen[2:1+nparams(Rauto)]...),
-    UnitRate(),
-    Rout(θgen[2+nparams(Rauto):1+nparams(Rout)+nparams(Rauto)]...),
-    UnitRate(),
-    Rgenlat(θgen[2+nparams(Rout)+nparams(Rauto):1+nparams(Rout)+nparams(Rauto)+nparams(Rgenlat)]...),
-    UnitRate(),
-    Rgenrec(θgen[2+nparams(Rout)+nparams(Rauto)+nparams(Rgenlat):1+nparams(Rout)+nparams(Rauto)+nparams(Rgenlat)+nparams(Rgenrec)]...))
+@individual GenerativeSEIR{Rauto, Rout, Rgenlat, Rgenrec}(θi, θgen) =
+    IndividualSEIR(θgen,
+        Rauto(θgen),
+        UnitRate(),
+        Rout(θgen),
+        UnitRate(),
+        Rgenlat(θgen),
+        UnitRate(),
+        Rgenrec(θgen))
 
 #General functions for SEIR
 

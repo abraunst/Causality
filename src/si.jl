@@ -17,21 +17,21 @@ end
 
 
 struct InferentialSI{Rauto, Rinf, Rout} <: SI end
-individual(::Type{InferentialSI{Rauto, Rinf, Rout}}, θi, θgen) where {Rauto, Rinf, Rout} = @views IndividualSI(
-    θi[1],
-    Rauto(θi[2:1+nparams(Rauto)]...),
-    Rinf(θi[2+nparams(Rauto):1+nparams(Rauto)+nparams(Rinf)]...),
-    Rout(θgen[2+nparams(Rauto):1+nparams(Rauto)+nparams(Rout)]...))
 
+@individual InferentialSI{Rauto, Rinf, Rout}(θi, θgen) =
+    IndividualSI(θi,
+        Rauto(θi),
+        Rinf(θi),
+        Rout(θgen))
 
 
 struct GenerativeSI{Rauto, Rout} <: SI end
 
-individual(::Type{GenerativeSI{Rauto, Rout}}, θi, θgen) where {Rauto, Rout} = @views IndividualSI(
-    θgen[1],
-    Rauto(θgen[2:1+nparams(Rauto)]...),
-    UnitRate(),
-    Rout(θgen[2+nparams(Rauto):1+nparams(Rauto)+nparams(Rout)]...))
+@individual GenerativeSI{Rauto, Rout}(θi, θgen) =
+    IndividualSI(θgen,
+        Rauto(θgen),
+        UnitRate(),
+        Rout(θgen))
 
 #General functions for SI
 
