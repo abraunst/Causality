@@ -84,7 +84,31 @@ function logQi(M::StochasticModel{<:SI}, i, ind, x)
     return s
 end
 
-logO(x, O, M::StochasticModel{<:SI}) = sum(log(p + ((x[i] < t) == s)*(1-2p)) for (i,s,t,p) in O; init=0.0)
+#function logO(x, O, M::StochasticModel{<:SI}) 
+ #   sum(log(p + ((x[i] < t) == s)*(1-2p)) for (i,s,t,p) in O; init=0.0)
+#end
+
+
+function logO(x, O, M::StochasticModel{<:SI})
+    su = 0.
+    for (i,s,t,p) in O
+        if s == 0 
+            if t < x[i]
+                su += 0.
+            else
+                su += x[i] - t
+            end
+        elseif s == 1
+            if t > x[i]
+                su += 0.
+            else
+                su += t - x[i]
+            end
+        end
+    end
+    su
+end
+
 
 n_states(M::StochasticModel{<:SI}) = 2
 trajectorysize(M::StochasticModel{<:SI}) = (nv(M.G))
