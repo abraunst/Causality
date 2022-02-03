@@ -17,7 +17,7 @@ end
 
 
 function density(g::GaussianRate, t)
-    a, b, c = g.a[], g.b[], g.c[]
+    a, b, c = g.a, g.b, g.c
     a*exp(-((t-b)/c)^2)
 end
 
@@ -27,12 +27,12 @@ logdensity(g::RateContinuous, t) = log(density(g, t))
 logdensity(g::GaussianRate, t) = -((t-g.b)/g.c)^2 + log(g.a)
 
 function cumulated(g::GaussianRate, t)
-    a, b, c = g.a[], g.b[], g.c[]
+    a, b, c = g.a, g.b, g.c
     a*c*0.5*sqrt(π)*(erfc(-(t-b)/c)-erfc(b/c))
 end
 
 function delay(g::GaussianRate, tj)
-    a, b, c = g.a[], g.b[], g.c[]
+    a, b, c = g.a, g.b, g.c
     y=2/(a*c*sqrt(π))*(cumulated(g, tj) - log(rand())) + erfc(b/c);
     if y > 2
         return Inf;
@@ -43,8 +43,8 @@ end
 
 
 function Base.:*(g1::GaussianRate, g2::GaussianRate)
-    a1, b1, c1 = g1.a[], g1.b[], g1.c[]
-    a2, b2, c2 = g2.a[], g2.b[], g2.c[]
+    a1, b1, c1 = g1.a, g1.b, g1.c
+    a2, b2, c2 = g2.a, g2.b, g2.c
     peak = a1 * a2 * exp(- (b1 - b2)^2 / (c1^2 + c2^2))
     avg  = (b1 * c2^2 + b2 * c1^2)/(c1^2+c2^2)
     var  = (c1^2 * c2^2) / (c1^2 + c2^2)

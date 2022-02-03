@@ -22,27 +22,27 @@ end
 
 struct InferentialSEIR{Rauto, Rinf, Rout, Rlat, Rgenlat, Rrec, Rgenrec} <: SEIR end
 
-individual(::Type{InferentialSEIR{Rauto, Rinf, Rout, Rlat, Rgenlat, Rrec, Rgenrec}}, θi, θgen) where {Rauto, Rinf, Rout, Rlat, Rgenlat, Rrec, Rgenrec} = @views IndividualSEIR(θi[1],
-    Rauto(θi[2:1+nparams(Rauto)]...),
-    Rinf(θi[2+nparams(Rauto):1+nparams(Rauto)+nparams(Rinf)]...),
-    Rout(θgen[2+nparams(Rauto):1+nparams(Rout)+nparams(Rauto)]...),
-    Rlat(θi[2+nparams(Rauto)+nparams(Rinf):1+nparams(Rauto)+nparams(Rinf)+nparams(Rlat)]...),
-    Rgenlat(θgen[2+nparams(Rout)+nparams(Rauto):1+nparams(Rout)+nparams(Rauto)+nparams(Rgenlat)]...),
-    Rrec(θi[2+nparams(Rauto)+nparams(Rinf)+nparams(Rlat):1+nparams(Rauto)+nparams(Rinf)+nparams(Rlat)+nparams(Rrec)]...),
-    Rgenrec(θgen[2+nparams(Rout)+nparams(Rauto)+nparams(Rgenlat):1+nparams(Rout)+nparams(Rauto)+nparams(Rgenlat)+nparams(Rgenrec)]...))
-
+@individual InferentialSEIR{Rauto, Rinf, Rout, Rlat, Rgenlat, Rrec, Rgenrec}(θi, θgen) =
+    IndividualSEIR(θi,
+        Rauto(θi),
+        Rinf(θi),
+        Rout(θgen),
+        Rlat(θi),
+        Rgenlat(θgen),
+        Rrec(θi),
+        Rgenrec(θgen))
 
 struct GenerativeSEIR{Rauto, Rinf, Rout, Rlat, Rgenlat, Rrec, Rgenrec} <: SEIR end
 
-individual(::Type{GenerativeSEIR{Rauto, Rout, Rgenlat, Rgenrec}}, θi, θgen) where {Rauto, Rout, Rgenlat, Rgenrec} = @views IndividualSEIR(
-    θgen[1],
-    Rauto(θgen[2:1+nparams(Rauto)]...),
-    UnitRate(),
-    Rout(θgen[2+nparams(Rauto):1+nparams(Rout)+nparams(Rauto)]...),
-    UnitRate(),
-    Rgenlat(θgen[2+nparams(Rout)+nparams(Rauto):1+nparams(Rout)+nparams(Rauto)+nparams(Rgenlat)]...),
-    UnitRate(),
-    Rgenrec(θgen[2+nparams(Rout)+nparams(Rauto)+nparams(Rgenlat):1+nparams(Rout)+nparams(Rauto)+nparams(Rgenlat)+nparams(Rgenrec)]...))
+@individual GenerativeSEIR{Rauto, Rout, Rgenlat, Rgenrec}(θi, θgen) =
+    IndividualSEIR(θgen,
+        Rauto(θgen),
+        UnitRate(),
+        Rout(θgen),
+        UnitRate(),
+        Rgenlat(θgen),
+        UnitRate(),
+        Rgenrec(θgen))
 
 #General functions for SEIR
 
@@ -113,12 +113,12 @@ function logQi(M::StochasticModel{<:SEIR}, i, ind, x::Matrix{Float64})     #x[i]
     lat = shift(ind.lat_delay, x[i,1]) * ind.latency
     s -= cumulated(lat, x[i,2]) - cumulated(lat, x[i,1])
     if x[i,2] < M.T
-        s += log(density(lat, x[i,2]))
+        s += logdensity(lat, x[i,2])
     end
     rec = shift(ind.recov_delay, x[i,2]) * ind.recov
     s -= cumulated(rec, x[i,3]) - cumulated(rec, x[i,2])
     if x[i,3] < M.T
-        s += log(density(rec, x[i,3]))
+        s += logdensity(rec, x[i,3])
     end
     return s
 end
