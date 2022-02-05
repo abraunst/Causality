@@ -5,8 +5,9 @@ export ConstantRate, GaussianRate, MaskedRate, UnitRate
 
 abstract type RateContinuous end
 
+nparams(::Type{R}) where R = length(R.types)
 
-
+####### GaussianRate
 
 struct GaussianRate{T} <: RateContinuous
     a::T
@@ -14,13 +15,10 @@ struct GaussianRate{T} <: RateContinuous
     c::T
 end
 
-
-
 function density(g::GaussianRate, t)
     a, b, c = g.a, g.b, g.c
     a*exp(-((t-b)/c)^2)
 end
-
 
 logdensity(g::RateContinuous, t) = log(density(g, t))
 
@@ -40,8 +38,6 @@ function delay(g::GaussianRate, tj)
     return -c * erfcinv(y) + b
 end
 
-
-
 function Base.:*(g1::GaussianRate, g2::GaussianRate)
     a1, b1, c1 = g1.a, g1.b, g1.c
     a2, b2, c2 = g2.a, g2.b, g2.c
@@ -52,6 +48,11 @@ function Base.:*(g1::GaussianRate, g2::GaussianRate)
 end
 
 shift(g::GaussianRate, tj) = GaussianRate(g.a,g.b+tj,g.c)
+
+nparams(::Type{GaussianRate}) = 3
+
+
+#### ConstantRate
 
 struct ConstantRate{T} <: RateContinuous
     c::T
@@ -64,6 +65,10 @@ cumulated(c::ConstantRate, Δt) = c.c*Δt
 delay(c::ConstantRate, tj) = tj - log(rand())/c.c
 density(c::ConstantRate, t) = c.c
 shift(c::ConstantRate, tj) = c
+
+nparams(::Type{ConstantRate}) = 1
+
+#### MaskedRate
 
 struct MaskedRate{R} <: RateContinuous
     rate::R
@@ -101,6 +106,10 @@ end
 Base.:*(m::MaskedRate, g::RateContinuous) = MaskedRate(m.rate*g, m.mask)
 Base.:*(g::RateContinuous, m::MaskedRate) = MaskedRate(m.rate*g, m.mask)
 Base.:*(m::MaskedRate, n::MaskedRate) = MaskedRate(m.rate*n.rate, m.mask ∩ n.mask)
+nparams(::Type{MaskedRate{R}}) where R = nparams(R)
+
+
+####### UnitRate
 
 struct UnitRate <: RateContinuous end
 
@@ -112,8 +121,5 @@ logdensity(::UnitRate, t) = 0.0
 Base.:*(u::UnitRate, r::RateContinuous) = r
 Base.:*(r::RateContinuous, u::UnitRate) = r
 Base.:*(::UnitRate,::UnitRate) = UnitRate()
-
 nparams(::Type{UnitRate}) = 0
-nparams(::Type{<: GaussianRate}) = 3
-nparams(::Type{<: ConstantRate}) = 1
-nparams(::Type{MaskedRate{R}}) where R = nparams(R)
+
