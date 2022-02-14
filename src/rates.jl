@@ -84,7 +84,7 @@ function cumulated(m::MaskedRate, t)
     s = 0.0
     for ab in m.mask.v
         if right(ab) < t
-            s += cumulated(m.rate, right(ab)) - cumulated(m.rate, left(ab))
+            s += cumulated(m.rate, max(0,right(ab))) - cumulated(m.rate, max(0,left(ab)))
         elseif left(ab) < t
             s += cumulated(m.rate, t) - cumulated(m.rate, left(ab))
         else
@@ -121,5 +121,6 @@ logdensity(::UnitRate, t) = 0.0
 Base.:*(u::UnitRate, r::RateContinuous) = r
 Base.:*(r::RateContinuous, u::UnitRate) = r
 Base.:*(::UnitRate,::UnitRate) = UnitRate()
+Base.:*(m::MaskedRate, n::UnitRate) = m
 nparams(::Type{UnitRate}) = 0
 

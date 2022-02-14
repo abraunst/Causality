@@ -1,6 +1,6 @@
-using SparseArrays, IndexedGraphs, DataStructures, ProgressMeter, SparseArrays, TrackingHeaps
+using SparseArrays, IndexedGraphs, DataStructures, ProgressMeter, SparseArrays, TrackingHeaps, Distributions
 
-export  Sampler, GenerativeSI, InferentialSI
+export  Sampler, GenerativeSI, InferentialSI, GaussianInferentialSI, IndividualSI, SI
 
 # For the SI
 #θi = pseed,autoinf, inf_in
@@ -16,8 +16,12 @@ struct IndividualSI{P,Rauto,Rinf,Rout}
 end
 
 
-struct InferentialSI{Rauto, Rinf, Rout} <: SI end
+struct GaussianInferentialSI <: SI end
+individual(::Type{GaussianInferentialSI}, θi, θg) = @views IndividualSI(θi[1], GaussianRate(θi[2:4]...), GaussianRate(θi[5:7]...), GaussianRate(θg[5:7]...))
 
+
+
+struct InferentialSI{Rauto, Rinf, Rout} <: SI end
 @individual InferentialSI{Rauto, Rinf, Rout}(θi, θgen) =
     IndividualSI(θi,
         Rauto(θi),
@@ -25,8 +29,8 @@ struct InferentialSI{Rauto, Rinf, Rout} <: SI end
         Rout(θgen))
 
 
-struct GenerativeSI{Rauto, Rout} <: SI end
 
+struct GenerativeSI{Rauto, Rout} <: SI end
 @individual GenerativeSI{Rauto, Rout}(θi, θgen) =
     IndividualSI(θgen,
         Rauto(θgen),
@@ -84,31 +88,72 @@ function logQi(M::StochasticModel{<:SI}, i, ind, x)
     return s
 end
 
-#function logO(x, O, M::StochasticModel{<:SI}) 
- #   sum(log(p + ((x[i] < t) == s)*(1-2p)) for (i,s,t,p) in O; init=0.0)
-#end
+#=function logO(x, O, M::StochasticModel{<:SI}) 
+    sum(log(p + ((x[i] < t) == s)*(1-2p)) for (i,s,t,p) in O; init=0.0)
+end=#
+
+
+#=function logO(x, O, M::StochasticModel{<:SI})
+    su = 0.
+    T = M.T
+    for (i,s,t,p) in O
+        if s == 0
+            if x[i] < t
+            su += log(p/10 + p * (x[i]/t))
+            end
+        elseif s==1
+            if x[i] > t
+                su += log(p/10 + (T-x[i])/(T-t)*p )
+            end
+        end
+    end
+    su
+end=#
 
 
 function logO(x, O, M::StochasticModel{<:SI})
     su = 0.
+    T = M.T
     for (i,s,t,p) in O
-        if s == 0 
-            if t < x[i]
-                su += 0.
-            else
-                su += x[i] - t
+        if s == 0
+            if x[i] < t
+                su += log(p) + (10 * x[i]/t)^2 - 100 
             end
-        elseif s == 1
-            if t > x[i]
-                su += 0.
-            else
-                su += t - x[i]
+        elseif s==1
+            if x[i] > t
+                su += log(p) - ( 10 * (x[i] - t) / (T-t) )^2
             end
         end
     end
     su
 end
 
+#=function logO(x, O, M::StochasticModel{<:SI})
+    gauss = Distributions.Gaussian(0.,0.1)
+    su = 0.
+    for (i,s,t,p) in O
+        if s == 0 
+            su += logccdf(gauss, t - x[i]) 
+        elseif s == 1
+            su += logccdf(gauss, x[i] - t) 
+        end
+    end
+    su
+end =#
+
+#=function logO(x, O, M::StochasticModel{<:SI})
+    su = 0.
+    for (i,s,t,p) in O
+        Δt = t - x[i]
+        sigma = 1/10
+        if s == 0 
+            su += log( ( (1-p)*erfc(sigma * Δt ) + p*erfc(-Δt * sigma) - 1e-3 * Δt ) / 2 ) 
+        elseif s == 1
+            su += log( ( (1-p)*erfc(-Δt * sigma) + p*erfc(Δt * sigma) +  1e-3 * Δt ) / 2 ) 
+        end
+    end
+    su
+end=#
 
 n_states(M::StochasticModel{<:SI}) = 2
 trajectorysize(M::StochasticModel{<:SI}) = (nv(M.G))

@@ -48,7 +48,7 @@ macro individual(x)
     :(individual(::Type{$J}, $θ1, $θ2) where {$(types...)} = @views $I($(v...)))
 end
 
-individual(M::StochasticModel{I}, θi) where {I} = individual(I, θi, M.θgen)
-individual(M::StochasticModel{I}, i::Int, θgen = M.θgen) where {I} = individual(I, (@view M.θ[:,i]), θgen)
+individual(M::StochasticModel{I}, i::Int, θi = @view(M.θ[:,i]), θgen = M.θgen) where {I} = individual(I, θi, θgen)
+
 in_neighbors(M::StochasticModel, i::Int) = ((e.src, M.V[e.idx]) for e ∈ inedges(M.G, i))
 out_neighbors(M::StochasticModel, i::Int) = ((e.dst, M.V[e.idx]) for e ∈ outedges(M.G, i))

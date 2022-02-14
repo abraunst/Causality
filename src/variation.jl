@@ -10,7 +10,7 @@ function logQ(x, M::StochasticModel)
 end
 
 function logQgen(x, M::StochasticModel, θgen)
-    sum(logQi(M, i, individual(M, i, θgen), x) for i = 1:size(x,1); init=0.0)
+    sum(logQi(M, i, individual(M, i, @view(M.θ[:,i]), θgen), x) for i = 1:size(x,1); init=0.0)
 end
 
 
@@ -34,6 +34,7 @@ function descend!(Mp, O; M = copy(Mp),
     dθgen = [zero(M.θgen) for ti=1:nt]
     Dθ = [zero(M.θ) for ti=1:nt]
     Dθgen = [zero(M.θgen) for ti=1:nt]
+    Obs = [[o for o in O if o[1] == i ] for i = 1:N]  #observations grouped for particle number
     avF = zeros(nt)
     S! = [Sampler(M) for i=1:nt]
     pr = Progress(numiters)
@@ -49,22 +50,26 @@ function descend!(Mp, O; M = copy(Mp),
             ti = Threads.threadid()
             x, sample! = X[ti], S![ti]
             sample!(x)
-            F = (logQ(x, M) - logQ(x, Mp) - logO(x, O, Mp)) / numsamples
+            F1 = logQ(x, M) - logQ(x, Mp) 
             gradient!(dθ[ti], x, M)
-            Dθ[ti] .+= F .* dθ[ti]
-            ForwardDiff.gradient!(dθgen[ti], th->logQgen(x, M, th), θgen)
-            Dθgen[ti] .+= (F .* dθgen[ti] .- ForwardDiff.gradient(th -> logQgen(x, Mp, th), θgen))
-            #@show Dθgen[ti] dθgen[ti]
-            avF[ti] += F
+            avF[ti] += (F1 - logO(x, O, Mp)) / numsamples
+            for i = 1:N
+                F = (F1 - logO(x, Obs[i], Mp)) / numsamples
+                Dθ[ti][:,i] .+= F .* dθ[ti][:,i]
+            end  
+            #ForwardDiff.gradient!(dθgen[ti], th->logQgen(x, M, th), θgen)
+            #Dθgen[ti] .+= (F .* dθgen[ti] .- ForwardDiff.gradient(th -> logQgen(x, Mp, th), θgen))
+            #@show Dθgen[ti] dθgen[ti]            
         end
         for ti = 2:nt
             any(isnan.(Dθ[ti])) && (@show sum(avF) t; return M)
             Dθ[1] .+= Dθ[ti]
             Dθgen[1] .+= Dθgen[ti]
         end
-        #@show Dθgen[1]
+        #@show Dθ[1][[1,2,5],3] 
         step!(θ, Dθ[1], descender)
         θ .= clamp.(θ, θmin, θmax) 
+        #Dθgen[1][1:4] .= 0
         if mod(t,learnhyper) == 0
             step!(θgen, Dθgen[1], hyperdescender)
             θgen .= clamp.(θgen, θgenmin, θgenmax) 
@@ -76,7 +81,7 @@ end
 
 function gradient!(dθ, x, M::StochasticModel)
     for i=1:size(dθ, 2)
-        ForwardDiff.gradient!((@view dθ[:,i]), θi->logQi(M, i, individual(M, θi), x), @view M.θ[:,i])
+        ForwardDiff.gradient!((@view dθ[:,i]), θi->logQi(M, i, individual(M, i, θi), x), @view M.θ[:,i])
     end
 end
 
