@@ -1,6 +1,6 @@
-using SparseArrays, IndexedGraphs, DataStructures, ProgressMeter, SparseArrays, TrackingHeaps, Distributions
+using SparseArrays, IndexedGraphs, DataStructures, ProgressMeter, SparseArrays, TrackingHeaps, Distributions, IntervalUnionArithmetic
 
-export  Sampler, GenerativeSI, InferentialSI, GaussianInferentialSI, IndividualSI, SI
+export  Sampler, GenerativeSI, InferentialSI, GaussianInferentialSI, IndividualSI, SI, StepInferentialSI
 
 # For the SI
 #θi = pseed,autoinf, inf_in
@@ -18,6 +18,12 @@ end
 
 struct GaussianInferentialSI <: SI end
 individual(::Type{GaussianInferentialSI}, θi, θg) = @views IndividualSI(θi[1], GaussianRate(θi[2:4]...), GaussianRate(θi[5:7]...), GaussianRate(θg[5:7]...))
+
+struct StepInferentialSI <: SI end
+individual(::Type{StepInferentialSI}, θi, θg) = @views IndividualSI(θi[1],
+    StepRate(ConstantRate(θi[2]), θi[3], θi[4]), 
+    StepRate(ConstantRate(θi[5]), θi[6], θi[7]), 
+    GaussianRate(θg[5:7]...))
 
 
 
@@ -111,7 +117,7 @@ end=#
 end=#
 
 
-function logO(x, O, M::StochasticModel{<:SI})
+#=function logO(x, O, M::StochasticModel{<:SI})
     su = 0.
     T = M.T
     for (i,s,t,p) in O
@@ -126,9 +132,9 @@ function logO(x, O, M::StochasticModel{<:SI})
         end
     end
     su
-end
+end=#
 
-#=function logO(x, O, M::StochasticModel{<:SI})
+function logO(x, O, M::StochasticModel{<:SI})
     gauss = Distributions.Gaussian(0.,0.1)
     su = 0.
     for (i,s,t,p) in O
@@ -139,7 +145,7 @@ end
         end
     end
     su
-end =#
+end
 
 #=function logO(x, O, M::StochasticModel{<:SI})
     su = 0.
@@ -153,7 +159,7 @@ end =#
         end
     end
     su
-end=#
+    end=#
 
 n_states(M::StochasticModel{<:SI}) = 2
 trajectorysize(M::StochasticModel{<:SI}) = (nv(M.G))
