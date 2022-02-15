@@ -1,6 +1,6 @@
-using SparseArrays, IndexedGraphs, DataStructures, ProgressMeter, SparseArrays, TrackingHeaps
+using SparseArrays, IndexedGraphs, DataStructures, ProgressMeter, SparseArrays, Distributions, TrackingHeaps
 
-export  GenerativeSEIR, InferentialSEIR
+export  GenerativeSEIR, StepInferentialSEIR, GaussianInferentialSEIR
 
 abstract type SEIR end
 
@@ -18,6 +18,29 @@ struct IndividualSEIR{P,Rauto,Rinf,Rout,Rlat,Rrec,Rgenlat,Rgenrec}
     recov::Rrec
     recov_delay::Rgenrec
 end
+
+struct GaussianInferentialSEIR <: SEIR end
+individual(::Type{GaussianInferentialSEIR}, θi, θg) = @views IndividualSEIR(θi[1], #pseed 
+    GaussianRate(θi[2:4]...),   #autoinf
+    GaussianRate(θi[5:7]...),   #infection_in
+    GaussianRate(θg[5:7]...),   #infection_out delay
+    GaussianRate(θi[8:10]...),  #latency in time
+    GaussianRate(θg[8:10]...),  #latency delay
+    GaussianRate(θi[11:13]...), #recovery in time
+    GaussianRate(θg[11:13]...), #recovery delay
+)
+
+struct StepInferentialSEIR <: SEIR end
+individual(::Type{StepInferentialSI}, θi, θg) = @views IndividualSEIR(θi[1], #pseed
+    StepRate(ConstantRate(θi[2]), θi[3], θi[4]),    #autoinf
+    StepRate(ConstantRate(θi[5]), θi[6], θi[7]),    #infection_in
+    GaussianRate(θg[5:7]...),                       #infection_out delay
+    StepRate(ConstantRate(θi[8]), θi[9], θi[10]),   #latency in time
+    GaussianRate(θg[8:10]...),                      #latency delay
+    StepRate(ConstantRate(θi[11]), θi[12], θi[13]), #recovery in time
+    GaussianRate(θg[11:13]...),                     #recovery delay
+)
+
 
 
 struct InferentialSEIR{Rauto, Rinf, Rout, Rlat, Rgenlat, Rrec, Rgenrec} <: SEIR end
@@ -123,7 +146,25 @@ function logQi(M::StochasticModel{<:SEIR}, i, ind, x::Matrix{Float64})     #x[i]
     return s
 end
 
-logO(x, O, M::StochasticModel{<:SEIR}) = sum(log(p + ((x[i,2] < t < x[i,3]) == s)*(1-2p)) for (i,s,t,p) in O; init=0.0)
+#=logO(x, O, M::StochasticModel{<:SEIR}) = sum(log(p + ((x[i,2] < t < x[i,3]) == s)*(1-2p)) for (i,s,t,p) in O; init=0.0)=#
+
+function logO(x, O, M::StochasticModel{<:SEIR}) 
+    gauss = Distributions.Gaussian(0.,0.1)
+    su = 0.
+    T = M.T
+    for (i,s,t,p) in O
+        if s == 0
+            (x[i,2] < t < x[i,3]) && (su += max(logccdf(gauss, t - x[i,2]) , logccdf(gauss, x[i,3] - t)))
+        elseif s==1            
+            if t < x[i,2] 
+                su += logccdf(gauss, x[i,2] - t) 
+            elseif t > x[i,3]
+                su += logccdf(gauss, t - x[i,3]) 
+            end
+        end
+    end
+    su
+end
 
 n_states(M::StochasticModel{<:SEIR}) = 4
 trajectorysize(M::StochasticModel{<:SEIR}) = (nv(M.G), 3)
