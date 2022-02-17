@@ -66,7 +66,7 @@ function descend!(Mp, O; M = copy(Mp),
             Dθ[1] .+= Dθ[ti]
             Dθgen[1] .+= Dθgen[ti]
         end
-        #@show Dθ[1][[1,2,5],3] 
+        #@show Dθ[1][:,1] 
         step!(θ, Dθ[1], descender)
         θ .= clamp.(θ, θmin, θmax) 
         #Dθgen[1][1:4] .= 0

@@ -144,6 +144,7 @@ function cumulated(s::StepRate, t)
     elseif l_ext(s) < t
         return ( cumulated(s.rate, t) - cumulated(s.rate, max(0,l_ext(s))) )
     end
+    return sum
 end
 
 function delay(s::StepRate, tj)
