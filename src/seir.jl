@@ -31,7 +31,7 @@ individual(::Type{GaussianInferentialSEIR}, θi, θg) = @views IndividualSEIR(θ
 )
 
 struct StepInferentialSEIR <: SEIR end
-individual(::Type{StepInferentialSI}, θi, θg) = @views IndividualSEIR(θi[1], #pseed
+individual(::Type{StepInferentialSEIR}, θi, θg) = @views IndividualSEIR(θi[1], #pseed
     StepRate(ConstantRate(θi[2]), θi[3], θi[4]),    #autoinf
     StepRate(ConstantRate(θi[5]), θi[6], θi[7]),    #infection_in
     GaussianRate(θg[5:7]...),                       #infection_out delay
@@ -147,6 +147,7 @@ function logQi(M::StochasticModel{<:SEIR}, i, ind, x::Matrix{Float64})     #x[i]
 end
 
 #=logO(x, O, M::StochasticModel{<:SEIR}) = sum(log(p + ((x[i,2] < t < x[i,3]) == s)*(1-2p)) for (i,s,t,p) in O; init=0.0)=#
+
 
 function logO(x, O, M::StochasticModel{<:SEIR}) 
     gauss = Distributions.Gaussian(0.,0.1)
