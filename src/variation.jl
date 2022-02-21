@@ -56,9 +56,10 @@ function descend!(Mp, O; M = copy(Mp),
             for i = 1:N
                 F = (F1 - logO(x, Obs[i], Mp)) / numsamples
                 Dθ[ti][:,i] .+= F .* dθ[ti][:,i]
-            end  
-            #ForwardDiff.gradient!(dθgen[ti], th->logQgen(x, M, th), θgen)
-            #Dθgen[ti] .+= (F .* dθgen[ti] .- ForwardDiff.gradient(th -> logQgen(x, Mp, th), θgen))
+            end 
+            F = F1 - logO(x, O, Mp)
+            ForwardDiff.gradient!(dθgen[ti], th->logQgen(x, M, th), θgen)
+            Dθgen[ti] .+= (F .* dθgen[ti] .- ForwardDiff.gradient(th -> logQgen(x, Mp, th), θgen))
             #@show Dθgen[ti] dθgen[ti]            
         end
         for ti = 2:nt
@@ -69,7 +70,7 @@ function descend!(Mp, O; M = copy(Mp),
         #@show Dθ[1][:,1] 
         step!(θ, Dθ[1], descender)
         θ .= clamp.(θ, θmin, θmax) 
-        #Dθgen[1][1:4] .= 0
+        Dθgen[1][[1,6,7]] .= 0
         if mod(t,learnhyper) == 0
             step!(θgen, Dθgen[1], hyperdescender)
             θgen .= clamp.(θgen, θgenmin, θgenmax) 
