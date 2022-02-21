@@ -59,7 +59,7 @@ struct ConstantRate{T} <: RateContinuous
 end
 
 Base.:*(g1::ConstantRate, g2::ConstantRate) = ConstantRate(g1.c*g2.c)
-Base.:*(g1::ConstantRate, g2::GaussianRate) = GaussianRate(g1.c*g2.a,g2.b,g2.c)
+Base.:*(g1::ConstantRate{T}, g2::GaussianRate) where T = GaussianRate{T}(g1.c*g2.a,g2.b,g2.c)
 Base.:*(g2::GaussianRate, g1::ConstantRate) = g1*g2
 cumulated(c::ConstantRate, Δt) = c.c*Δt
 delay(c::ConstantRate, tj) = tj - log(rand())/c.c
@@ -84,7 +84,7 @@ function cumulated(m::MaskedRate, t)
     s = 0.0
     for ab in m.mask.v
         if right(ab) < t
-            s += cumulated(m.rate, right(ab)) - cumulated(m.rate, left(ab))
+            s += cumulated(m.rate, max(0,right(ab))) - cumulated(m.rate, max(0,left(ab)))
         elseif left(ab) < t
             s += cumulated(m.rate, t) - cumulated(m.rate, left(ab))
         else
@@ -121,5 +121,46 @@ logdensity(::UnitRate, t) = 0.0
 Base.:*(u::UnitRate, r::RateContinuous) = r
 Base.:*(r::RateContinuous, u::UnitRate) = r
 Base.:*(::UnitRate,::UnitRate) = UnitRate()
+Base.:*(m::MaskedRate, n::UnitRate) = m
 nparams(::Type{UnitRate}) = 0
+nparams(::Type{<: GaussianRate}) = 3
+nparams(::Type{<: ConstantRate}) = 1
+nparams(::Type{MaskedRate{R}}) where R = nparams(R)
 
+struct StepRate{R, T} <: RateContinuous
+    rate::R
+    center::T
+    width::T    
+end
+l_ext(s::StepRate) = s.center - s.width/2
+r_ext(s::StepRate) = s.center + s.width/2
+
+density(s::StepRate, t) = l_ext(s) < t < r_ext(s) ? density(s.rate, t) : 0.0
+logdensity(s::StepRate, t) = l_ext(s) < t < r_ext(s) ? logdensity(s.rate, t) : -Inf
+function cumulated(s::StepRate, t)
+    sum = 0.0
+    if r_ext(s) < t
+        return ( cumulated(s.rate, max(0, r_ext(s))) - cumulated(s.rate, max(0,l_ext(s))) )
+    elseif l_ext(s) < t
+        return ( cumulated(s.rate, t) - cumulated(s.rate, max(0,l_ext(s))) )
+    end
+    return sum
+end
+
+function delay(s::StepRate, tj)
+    tj > r_ext(s) && return Inf
+    t = delay(s.rate, max(l_ext(s),tj))
+    l_ext(s) < t < r_ext(s)  && return t
+    return Inf
+end
+
+mask(s::StepRate) =  IntervalUnion(l_ext(s), r_ext(s))
+
+Base.:*(s::StepRate, g::RateContinuous) = StepRate(s.rate * g, s.center, s.width)
+Base.:*(g::GaussianRate, s::StepRate) = StepRate(s.rate * g, s.center, s.width)
+Base.:*(s::StepRate, g::GaussianRate) = g * s
+Base.:*(s::StepRate, n::MaskedRate) = MaskedRate(s.rate * n.rate, n.mask ∩ mask(s))
+
+shift(s::StepRate, tj) = StepRate(s.a, s.center+tj, s.width)
+Base.:*(s::StepRate, n::UnitRate) = s
+nparams(::Type{StepRate{R,T}}) where {R,T} = nparams(R) + 2
