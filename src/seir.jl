@@ -146,7 +146,7 @@ function logQi(M::StochasticModel{<:SEIR}, i, ind, x::Matrix{Float64})     #x[i]
     return s
 end
 
-logO(x, O, M::StochasticModel{<:SEIR}) = sum(log(p + ((x[i,2] < t < x[i,3]) == s)*(1-2p)) for (i,s,t,p) in O; init=0.0)
+#logO(x, O, M::StochasticModel{<:SEIR}) = sum(log(p + ((x[i,2] < t < x[i,3]) == s)*(1-2p)) for (i,s,t,p) in O; init=0.0)
 
 
 #=function logO(x, O, M::StochasticModel{<:SEIR}) 
@@ -166,6 +166,25 @@ logO(x, O, M::StochasticModel{<:SEIR}) = sum(log(p + ((x[i,2] < t < x[i,3]) == s
     end
     su
 end=#
+
+function logO(x, O, M::StochasticModel{<:SEIR}) 
+    su = 0.
+    T = M.T
+    for (i,s,t,p) in O
+        if s == 0
+            (x[i,2] < t < x[i,3]) && (su += log(p) - 1 + 4*((t - (x[i,2]+x[i,3])/2)^2)/(x[i,2]-x[i,3])^2 )
+        elseif s==1            
+            if t < x[i,2] 
+                su += log(p) - (x[i,2] - t)^2 / x[i,2]^2
+            elseif t > x[i,3]
+                su += log(p) - 1 + (t - x[i,3])^2 / (T - x[i,3]^2)^2  
+            end
+        end
+    end
+    su
+end
+
+
 
 n_states(M::StochasticModel{<:SEIR}) = 4
 trajectorysize(M::StochasticModel{<:SEIR}) = (nv(M.G), 3)
