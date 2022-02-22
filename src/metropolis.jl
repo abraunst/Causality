@@ -55,7 +55,7 @@ function metropolis_sampling_parallel(Mp, O, K; numsamples = 10^3,numsteps=10^3)
     nt = Threads.nthreads()
     stats = [Vector{Float64}(undef,0) for t=1:nt]
 
-    pr = Progress(numsamples)
+    #pr = Progress(numsamples)
 
     #ProgressMeter.update!(pr,0)
     #jj = Threads.Atomic{Int}(0)
@@ -83,7 +83,7 @@ function metropolis_sampling_sequential(Mp, O, K; numsamples = 10^3,numsteps=10^
     stats = zeros(numsamples,N)
     pr = Progress(numsamples)
 
-    x,~ = metropolis_hasting_mc(Mp,O,K;numsteps = numsteps,x = x)
+    x,~ = metropolis_hasting_mc(Mp,O,K;numsteps = nfirst,x = x)
 
     for m = 1:numsamples
         x, acc_ratio = metropolis_hasting_mc(Mp,O,K;numsteps = numsteps,x = x)
