@@ -122,6 +122,7 @@ Base.:*(u::UnitRate, r::RateContinuous) = r
 Base.:*(r::RateContinuous, u::UnitRate) = r
 Base.:*(::UnitRate,::UnitRate) = UnitRate()
 Base.:*(m::MaskedRate, n::UnitRate) = m
+Base.:*(n::UnitRate, m::MaskedRate) = m * n
 nparams(::Type{UnitRate}) = 0
 nparams(::Type{<: GaussianRate}) = 3
 nparams(::Type{<: ConstantRate}) = 1
