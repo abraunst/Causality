@@ -117,24 +117,24 @@ end=#
 end=#
 
 
-#=function logO(x, O, M::StochasticModel{<:SI})
+function logO(x, O, M::StochasticModel{<:SI})
     su = 0.
     T = M.T
     for (i,s,t,p) in O
         if s == 0
             if x[i] < t
-                su += log(p) + (10 * x[i]/t)^2 - 100 
+                su += log(p) +  (10 * x[i]/t)^2 - 100 
             end
         elseif s==1
             if x[i] > t
-                su += log(p) - ( 10 * (x[i] - t) / (T-t) )^2
+                su += log(p) - (10 * (x[i] - t) / (T-t) )^2
             end
         end
     end
     su
-end=#
+end
 
-function logO(x, O, M::StochasticModel{<:SI})
+#=function logO(x, O, M::StochasticModel{<:SI})
     gauss = Distributions.Gaussian(0.,0.1)
     su = 0.
     for (i,s,t,p) in O
@@ -145,7 +145,7 @@ function logO(x, O, M::StochasticModel{<:SI})
         end
     end
     su
-end
+end=#
 
 #=function logO(x, O, M::StochasticModel{<:SI})
     su = 0.
@@ -159,7 +159,7 @@ end
         end
     end
     su
-    end=#
+end=#
 
 n_states(M::StochasticModel{<:SI}) = 2
 trajectorysize(M::StochasticModel{<:SI}) = (nv(M.G))
