@@ -1,7 +1,7 @@
 import Enzyme, ForwardDiff
 
 
-export descend!, logQ
+export descend!, logQ, localdescend!
 
 
 
@@ -23,7 +23,7 @@ function descend!(Mp, O; M = copy(Mp),
         θmax = 1-1e-5,
         θgenmin = 1e-5,
         θgenmax = 1-1e-5,
-        learnhyper=1
+        hyper_mask = []  #put here the indices of the hyperparameters NOT to learn
     )
     
     number_of_states = n_states(M) 
@@ -54,7 +54,7 @@ function descend!(Mp, O; M = copy(Mp),
             gradient!(dθ[ti], x, M)
             avF[ti] += (F1 - logO(x, O, Mp)) / numsamples
             for i = 1:N
-                F = (F1 - logO(x, Obs[i], Mp)) / numsamples
+                F = (F1 - logO(x, O, Mp)) / numsamples
                 Dθ[ti][:,i] .+= F .* dθ[ti][:,i]
             end 
             F = F1 - logO(x, O, Mp)
@@ -70,11 +70,9 @@ function descend!(Mp, O; M = copy(Mp),
         #@show Dθ[1][:,1] 
         step!(θ, Dθ[1], descender)
         θ .= clamp.(θ, θmin, θmax) 
-        Dθgen[1][[1,6,7]] .= 0
-        if mod(t,learnhyper) == 0
-            step!(θgen, Dθgen[1], hyperdescender)
-            θgen .= clamp.(θgen, θgenmin, θgenmax) 
-        end
+        Dθgen[1][hyper_mask] .= 0
+        step!(θgen, Dθgen[1], hyperdescender)
+        θgen .= clamp.(θgen, θgenmin, θgenmax) 
         ProgressMeter.next!(pr, showvalues=[(:F,sum(avF))])
     end
     sum(avF)

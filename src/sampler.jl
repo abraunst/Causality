@@ -1,6 +1,6 @@
 using DataStructures, ProgressMeter, SparseArrays, TrackingHeaps
 
-export prior, post, reweighted_post
+export prior, post, reweighted_post , softpost
 
 
 function prior(M::StochasticModel; numsamples=10^4)
@@ -30,6 +30,22 @@ function post(Mp, O; numsamples=10^4)
         stats[m, :, :] .= x
     end
     stats
+end
+
+function softpost(Mp, O; numsamples=10^4)
+    sample! = Sampler(Mp)
+    x = zeros(trajectorysize(Mp))
+    N = nv(Mp.G)
+    stats = zeros(numsamples, size(x)...)
+    @showprogress for m=1:numsamples
+        sample!(x)
+        ok = compatibility(x, O, Mp)
+        if ok
+           stats[m, :, :] .= x             
+        end        
+    end
+    stats
+    stats[vec(mapslices(col -> any(col .!= 0), stats, dims = 2)),:]
 end
 
 
