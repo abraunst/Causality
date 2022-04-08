@@ -44,7 +44,7 @@ function metropolis_hasting_mc(Mp, O, K; numsteps=10^3,x = post(Mp,O,numsamples 
     T = Mp.T
     xnew = similar(x)
     acc_ratio = 0.0
-    @showprogress for m=1:numsteps
+    for m=1:numsteps
 
         xnew = copy(x)
         i = rand(1:N)
