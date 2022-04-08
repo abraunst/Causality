@@ -38,7 +38,13 @@ function ΔE(x,xnew,i,Mp,O)
     s
 end
 
-function metropolis_hasting_mc(Mp, O, K; numsteps=10^3,x = post(Mp,O,numsamples = 1)[:],hr=true)
+function initial_condition(Mp,O;x0type=:post)
+    x0type==:post && return post(Mp,O;numsamples=1)[:]
+    x0type==:prior && return prior(Mp;numsamples=1)[:]
+    x0type==:rand && return rand(nv(Mp.G))*Mp.T
+end
+
+function metropolis_hasting_mc(Mp, O, K; numsteps=10^3,x = prior(Mp,numsamples = 1)[:],hr=true)
     
     N = nv(Mp.G)
     T = Mp.T
@@ -57,33 +63,33 @@ function metropolis_hasting_mc(Mp, O, K; numsteps=10^3,x = post(Mp,O,numsamples 
     xnew, acc_ratio/numsteps
 end
 
-function metropolis_sampling_parallel(Mp, O, K; numsamples = 10^3,numsteps=10^3,hastingratio=true)
+function metropolis_sampling_parallel(Mp, O, K; numsamples = 10^3,numsteps=10^3,hastingratio=true,x0type=:prior)
 
     N = nv(Mp.G)
     nt = Threads.nthreads()
     stats = [Vector{Float64}(undef,0) for t=1:nt]
 
-    #pr = Progress(numsamples)
+    pr = Progress(numsamples)
 
-    #ProgressMeter.update!(pr,0)
-    #jj = Threads.Atomic{Int}(0)
-    #l = Threads.SpinLock()
+    ProgressMeter.update!(pr,0)
+    jj = Threads.Atomic{Int}(0)
+    l = Threads.SpinLock()
 
     Threads.@threads for m = 1:numsamples
         ti = Threads.threadid()
-        append!(stats[ti],metropolis_hasting_mc(Mp,O,K;numsteps = numsteps,hr=hastingratio)[1])
+        append!(stats[ti],metropolis_hasting_mc(Mp,O,K;numsteps = numsteps,hr=hastingratio,x = initial_condition(Mp,O;x0type = x0type))[1])
         
-        #Threads.atomic_add!(jj, 1)
-        #Threads.lock(l)#acc_vec = zeros(length(δvec),numsamples)
-        #ProgressMeter.update!(pr, jj[])
-        #Threads.unlock(l) 
+        Threads.atomic_add!(jj, 1)
+        Threads.lock(l) #acc_vec = zeros(length(δvec),numsamples)
+        ProgressMeter.update!(pr, jj[])
+        Threads.unlock(l) 
     end
     
     return collect(reshape(vcat(stats...),(N,numsamples))')
 end
 
 
-function metropolis_sampling_sequential(Mp, O, K; numsamples = 10^3,numsteps=10^3,nfirst = 10^3, x = post(Mp,O,numsamples = 1)[:],hastingratio=true)
+function metropolis_sampling_sequential(Mp, O, K; numsamples = 10^3,numsteps=10^3,nfirst = 10^3, x = prior(Mp,numsamples = 1)[:],hastingratio=true)
 
     n_states(Mp)!=2 && @error "only working for SI "
     
