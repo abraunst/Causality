@@ -103,13 +103,16 @@ end=#
     su = 0.
     T = M.T
     for (i,s,t,p) in O
+        if s == (x[i] < t)
+            su += log(1-p)
+        end
         if s == 0
             if x[i] < t
-            su += log(p/10 + p * (x[i]/t))
+            su += log(p) - 10 + 10*(x[i]/t)
             end
         elseif s==1
             if x[i] > t
-                su += log(p/10 + (T-x[i])/(T-t)*p )
+                su += log(p) + 10*(T-x[i])/(T-t) - 10
             end
         end
     end
@@ -121,6 +124,9 @@ function logO(x, O, M::StochasticModel{<:SI})
     su = 0.
     T = M.T
     for (i,s,t,p) in O
+        if s == (x[i] < t)
+            su += log(1-p)
+        end
         if s == 0
             if x[i] < t
                 su += log(p) +  (10 * x[i]/t)^2 - 100 
@@ -133,33 +139,6 @@ function logO(x, O, M::StochasticModel{<:SI})
     end
     su
 end
-
-#=function logO(x, O, M::StochasticModel{<:SI})
-    gauss = Distributions.Gaussian(0.,0.1)
-    su = 0.
-    for (i,s,t,p) in O
-        if s == 0 
-            su += logccdf(gauss, t - x[i]) 
-        elseif s == 1
-            su += logccdf(gauss, x[i] - t) 
-        end
-    end
-    su
-end=#
-
-#=function logO(x, O, M::StochasticModel{<:SI})
-    su = 0.
-    for (i,s,t,p) in O
-        Δt = t - x[i]
-        sigma = 1/10
-        if s == 0 
-            su += log( ( (1-p)*erfc(sigma * Δt ) + p*erfc(-Δt * sigma) - 1e-3 * Δt ) / 2 ) 
-        elseif s == 1
-            su += log( ( (1-p)*erfc(-Δt * sigma) + p*erfc(Δt * sigma) +  1e-3 * Δt ) / 2 ) 
-        end
-    end
-    su
-end=#
 
 n_states(M::StochasticModel{<:SI}) = 2
 trajectorysize(M::StochasticModel{<:SI}) = (nv(M.G))
