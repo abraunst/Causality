@@ -59,7 +59,7 @@ struct ConstantRate{T} <: RateContinuous
 end
 
 Base.:*(g1::ConstantRate, g2::ConstantRate) = ConstantRate(g1.c*g2.c)
-Base.:*(g1::ConstantRate{T}, g2::GaussianRate) where T = GaussianRate{T}(g1.c*g2.a,g2.b,g2.c)
+Base.:*(g1::ConstantRate, g2::GaussianRate) = GaussianRate(g1.c*g2.a,g2.b,g2.c)
 Base.:*(g2::GaussianRate, g1::ConstantRate) = g1*g2
 cumulated(c::ConstantRate, Δt) = c.c*Δt
 delay(c::ConstantRate, tj) = tj - log(rand())/c.c
