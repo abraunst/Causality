@@ -166,7 +166,7 @@ end
     su
 end=#
 
-function logO(x, O, M::StochasticModel{<:SEIR}) 
+#=function logO(x, O, M::StochasticModel{<:SEIR}) 
     su = 0.
     T = M.T
     for (i,s,t,p) in O
@@ -181,10 +181,10 @@ function logO(x, O, M::StochasticModel{<:SEIR})
         end
     end
     su
-end
+end=#
 
 #Sierological Test function
-#=function logO(x, O, M::StochasticModel{<:SEIR}) 
+function logO(x, O, M::StochasticModel{<:SEIR}) 
     su = 0.
     T = M.T
     for (i,s,t,p) in O
@@ -195,7 +195,7 @@ end
         end
     end
     su
-end=#
+end
 
 
 
