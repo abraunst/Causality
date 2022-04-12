@@ -126,7 +126,6 @@ Base.:*(n::UnitRate, m::MaskedRate) = m * n
 nparams(::Type{UnitRate}) = 0
 nparams(::Type{<: GaussianRate}) = 3
 nparams(::Type{<: ConstantRate}) = 1
-nparams(::Type{MaskedRate{R}}) where R = nparams(R)
 
 struct StepRate{R, T} <: RateContinuous
     rate::R
