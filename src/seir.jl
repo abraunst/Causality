@@ -189,9 +189,9 @@ function logO(x, O, M::StochasticModel{<:SEIR})
     T = M.T
     for (i,s,t,p) in O
         if s == 0
-            (x[i,1] < t ) && (su += log(p) - (t - x[i,1])^2/ (T - x[i,1])^2  )
+            (x[i,1] < t ) && (su += log(p) - 100 * (t - x[i,1])^2/ (T - x[i,1])^2  )
         elseif s==1             
-            (t < x[i,1] ) && (su += log(p) - (x[i,1] - t)^2 / x[i,1]^2)
+            (t < x[i,1] ) && (su += log(p) - 100 * (x[i,1] - t)^2 / x[i,1]^2)
         end
     end
     su
