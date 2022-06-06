@@ -105,7 +105,7 @@ end
 
 Base.:*(m::MaskedRate, g::RateContinuous) = MaskedRate(m.rate*g, m.mask)
 Base.:*(g::RateContinuous, m::MaskedRate) = MaskedRate(m.rate*g, m.mask)
-Base.:*(m::MaskedRate, n::MaskedRate) = MaskedRate(m.rate*n.rate, m.mask ∩ n.mask)
+Base.:*(m::MaskedRate, n::MaskedRate) = MaskedRate(m.rate*n.rate, (m.mask ∩ n.mask))
 nparams(::Type{MaskedRate{R}}) where R = nparams(R)
 
 
