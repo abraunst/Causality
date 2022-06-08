@@ -9,6 +9,13 @@ function logQ(x, M::StochasticModel)
     sum(logQi(M, i, individual(M,i), x) for i = 1:size(x,1); init=0.0)
 end
 
+
+function logQcorr(x, M::StochasticModel)
+    N = nv(M.G)
+    logQ(x,M) - log(1 - prod(1 - individual(M,i).pseed for i = 1:N))
+end
+
+
 function logQgen(x, M::StochasticModel, θgen)
     sum(logQi(M, i, individual(M, i, @view(M.θ[:,i]), θgen), x) for i = 1:size(x,1); init=0.0)
 end
@@ -46,17 +53,20 @@ function descend!(Mp, O; M = copy(Mp),
             Dθgen[ti] .= 0.0
             avF[ti] = 0.0
         end
+        a = prod([1 - individual(M,i).pseed for i = 1:N])
+        b = a / (1-a)
         Threads.@threads for s = 1:numsamples
             ti = Threads.threadid()
             x, sample! = X[ti], S![ti]
             sample!(x)
-            F1 = logQ(x, M) - logQ(x, Mp) 
+            F1 = logQcorr(x, M) - logQ(x, Mp) 
             gradient!(dθ[ti], x, M)
             avF[ti] += (F1 - logO(x, O, Mp)) / numsamples
             for i = 1:N
                 F = (F1 - logO(x, O, Mp)) / numsamples
-                Dθ[ti][:,i] .+= F .* dθ[ti][:,i]
-            end 
+                Dθ[ti][:,i] .+= F .* dθ[ti][:,i] 
+                Dθ[ti][1,i] -= F * b/(1 - individual(M,i).pseed)
+            end
             F = F1 - logO(x, O, Mp)
             ForwardDiff.gradient!(dθgen[ti], th->logQgen(x, M, th), θgen)
             Dθgen[ti] .+= (F .* dθgen[ti] .- ForwardDiff.gradient(th -> logQgen(x, Mp, th), θgen))

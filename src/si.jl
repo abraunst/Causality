@@ -57,10 +57,15 @@ function Sampler(M::StochasticModel{<:SI})
         empty!(Q)
         x .= M.T
         s .= false
-        for i in eachindex(x)
-            ind = individual(M, i)
-            Q[i] = min(M.T, rand() < ind.pseed ? zero(M.T) : delay(ind.autoinf, zero(M.T)))
-        end
+        flag = 0
+        while flag == 0
+            empty!(Q)
+            for i in eachindex(x)
+                ind = individual(M, i)
+                Q[i] = min(M.T, rand() < ind.pseed ? zero(M.T) : delay(ind.autoinf, zero(M.T)))
+            end
+            flag = sum([Q[i] < M.T for i=1:N])
+        end        
         while !isempty(Q)
             i, t = pop!(Q)
             s[i] = true
@@ -91,8 +96,10 @@ function logQi(M::StochasticModel{<:SI}, i, ind, x)
     if x[i] < M.T
         s += log(s2)
     end
-    return s
+    return s 
 end
+
+
 
 #=function logO(x, O, M::StochasticModel{<:SI}) 
     sum(log(p + ((x[i] < t) == s)*(1-2p)) for (i,s,t,p) in O; init=0.0)
@@ -141,4 +148,4 @@ function logO(x, O, M::StochasticModel{<:SI})
 end
 
 n_states(M::StochasticModel{<:SI}) = 2
-trajectorysize(M::StochasticModel{<:SI}) = (nv(M.G))
+trajectorysize(M::StochasticModel{<:SI}) = nv(M.G)

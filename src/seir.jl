@@ -166,7 +166,7 @@ end
     su
 end=#
 
-function logO(x, O, M::StochasticModel{<:SEIR}) 
+#=function logO(x, O, M::StochasticModel{<:SEIR}) 
     su = 0.
     T = M.T
     for (i,s,t,p) in O
@@ -174,28 +174,28 @@ function logO(x, O, M::StochasticModel{<:SEIR})
             (x[i,1] < t < x[i,3]) && (su += log(p) - 100 + 400*((t - (x[i,1]+x[i,3])/2)^2)/(x[i,1]-x[i,3])^2 )
         elseif s==1            
             if t < x[i,1] 
-                su += log(p) - 100 * (x[i,1] - t)^2 / x[i,1]^2
+                su += log(p) - 100*(x[i,1] - t)^2 / x[i,1]^2
             elseif t > x[i,3]
-                su += log(p) - 100 * (t - x[i,3])^2 / (T - x[i,3])^2  
+                su += log(p) - 100*(t - x[i,3])^2 / (T - x[i,3]^2)^2  
             end
         end
     end
     su
-end
+end=#
 
 #Sierological Test function
-#=function logO(x, O, M::StochasticModel{<:SEIR}) 
+function logO(x, O, M::StochasticModel{<:SEIR}) 
     su = 0.
     T = M.T
     for (i,s,t,p) in O
         if s == 0
-            (x[i,1] < t) && (  su += log(p) - 100 * (x[i,1] - t)^2 / x[i,1]^2  )
-        elseif s==1                        
-            (t < x[i,1]) && (  su += log(p) - 100 * (x[i,1] - t)^2 / (T - x[i,1])^2  )
+            (x[i,1] < t ) && (su += log(p) - 100 * (t - x[i,1])^2/ (T - x[i,1])^2  )
+        elseif s==1             
+            (t < x[i,1] ) && (su += log(p) - 100 * (x[i,1] - t)^2 / x[i,1]^2)
         end
     end
     su
-end=#
+end
 
 
 
