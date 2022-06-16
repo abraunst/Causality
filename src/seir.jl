@@ -83,12 +83,16 @@ function Sampler(M::StochasticModel{<:SEIR})  #0=S  1=E  2=I  3=R
     end
     function sample!(x)
         @assert N == size(x,1)
-        empty!(Q)
         x .= M.T
         s .= 0
-        for i = 1:N
-            ind = individual(M, i)
-            updateQ!(i, rand() < ind.pseed ? zero(M.T) : delay(ind.autoinf, zero(M.T)))
+        flag = 0
+        while flag == 0
+            empty!(Q)
+            for i = 1:N
+                ind = individual(M, i)
+                updateQ!(i, rand() < ind.pseed ? zero(M.T) : delay(ind.autoinf, zero(M.T)))
+            end
+            flag = sum([Q[i] == zero(M.T) for i=1:N])
         end
         while !isempty(Q)
             i, t = pop!(Q)

@@ -64,7 +64,7 @@ function Sampler(M::StochasticModel{<:SI})
                 ind = individual(M, i)
                 Q[i] = min(M.T, rand() < ind.pseed ? zero(M.T) : delay(ind.autoinf, zero(M.T)))
             end
-            flag = sum([Q[i] < M.T for i=1:N])
+            flag = sum([Q[i] == zero(M.T) for i=1:N])
         end        
         while !isempty(Q)
             i, t = pop!(Q)
