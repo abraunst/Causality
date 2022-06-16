@@ -77,13 +77,12 @@ function Sampler(M::StochasticModel{<:SEIR})  #0=S  1=E  2=I  3=R
     s::Vector{Int} = zeros(Int, N)
     Q::TrackingHeap{Int, Float64, 2, MinHeapOrder, NoTrainingWheels} = TrackingHeap(Float64, S=NoTrainingWheels)
     function updateQ!(i, t)
-        if t < M.T
-            Q[i] = haskey(Q, i) ? min(Q[i], t) : t
-        end
+        Q[i] = haskey(Q, i) ? min(Q[i], t) : min(M.T,t)
     end
     function sample!(x)
         @assert N == size(x,1)
         x .= M.T
+        empty!(Q)
         s .= 0
         flag = 0
         while flag == 0
@@ -93,7 +92,7 @@ function Sampler(M::StochasticModel{<:SEIR})  #0=S  1=E  2=I  3=R
                 updateQ!(i, rand() < ind.pseed ? zero(M.T) : delay(ind.autoinf, zero(M.T)))
             end
             flag = sum([Q[i] == zero(M.T) for i=1:N])
-        end
+        end 
         while !isempty(Q)
             i, t = pop!(Q)
             s[i] += 1
