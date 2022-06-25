@@ -69,8 +69,7 @@ function descend!(Mp, O; M = copy(Mp),
             end
             F = F1 - logO(x, O, Mp)
             ForwardDiff.gradient!(dθgen[ti], th->logQgen(x, M, th), θgen)
-            Dθgen[ti] .+= (F .* dθgen[ti] .- ForwardDiff.gradient(th -> logQgen(x, Mp, th), θgen))
-            #@show Dθgen[ti] dθgen[ti]            
+            Dθgen[ti] .+= (F .* dθgen[ti] .- ForwardDiff.gradient(th -> logQgen(x, Mp, th), θgen))       
         end
         for ti = 2:nt
             any(isnan.(Dθ[ti])) && (@show sum(avF) t; return M)
