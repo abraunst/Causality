@@ -149,7 +149,7 @@ function logQi(M::StochasticModel{<:SEIR}, i, ind, x::Matrix{Float64})     #x[i]
     return s
 end
 
-#logO(x, O, M::StochasticModel{<:SEIR}) = sum(log(p + ((x[i,2] < t < x[i,3]) == s)*(1-2p)) for (i,s,t,p) in O; init=0.0)
+logO(x, O, M::StochasticModel{<:SEIR}) = sum(log(p + ((t > x[i,1]) == s)*(1-2p)) for (i,s,t,p) in O; init=0.0)
 
 
 #=function logO(x, O, M::StochasticModel{<:SEIR}) 
@@ -187,7 +187,7 @@ end=#
 end=#
 
 #Sierological Test function
-function logO(x, O, M::StochasticModel{<:SEIR}) 
+#=function logO(x, O, M::StochasticModel{<:SEIR}) 
     su = 0.
     T = M.T
     for (i,s,t,p) in O
@@ -198,7 +198,7 @@ function logO(x, O, M::StochasticModel{<:SEIR})
         end
     end
     su
-end
+end=#
 
 
 
