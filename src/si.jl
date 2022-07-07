@@ -101,9 +101,9 @@ end
 
 
 
-#=function logO(x, O, M::StochasticModel{<:SI}) 
+function logO(x, O, M::StochasticModel{<:SI}) 
     sum(log(p + ((x[i] < t) == s)*(1-2p)) for (i,s,t,p) in O; init=0.0)
-end=#
+end
 
 
 #=function logO(x, O, M::StochasticModel{<:SI})
@@ -127,7 +127,7 @@ end=#
 end=#
 
 
-function logO(x, O, M::StochasticModel{<:SI})
+#=function logO(x, O, M::StochasticModel{<:SI})
     su = 0.
     T = M.T
     for (i,s,t,p) in O
@@ -145,7 +145,7 @@ function logO(x, O, M::StochasticModel{<:SI})
         end
     end
     su
-end
+end=#
 
 n_states(M::StochasticModel{<:SI}) = 2
 trajectorysize(M::StochasticModel{<:SI}) = nv(M.G)
