@@ -57,15 +57,17 @@ function Sampler(M::StochasticModel{<:SI})
         empty!(Q)
         x .= M.T
         s .= false
-        flag = 0
-        while flag == 0
-            empty!(Q)
-            for i in eachindex(x)
-                ind = individual(M, i)
-                Q[i] = min(M.T, rand() < ind.pseed ? zero(M.T) : delay(ind.autoinf, zero(M.T)))
-            end
-            flag = sum([Q[i] == zero(M.T) for i=1:N])
-        end        
+        Z1 = prod(1 - individual(M,i).pseed for i = 1:N)
+        flag = 0 #a flag to see if there is a zero patient
+        for i in eachindex(x)
+            ind = individual(M, i)
+            eff_seed = (flag == 0 ? ind.pseed / (1-Z1) : ind.pseed)
+            Q[i] = min(M.T, rand() < eff_seed ? zero(M.T) : delay(ind.autoinf, zero(M.T)))
+            @show Z1
+            Z1 /= (1-ind.pseed)
+            flag += (Q[i] == zero(M.T)) #if i is a zero patient the flag is no more 0
+        end           
+       
         while !isempty(Q)
             i, t = pop!(Q)
             s[i] = true
