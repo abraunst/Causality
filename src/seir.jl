@@ -85,14 +85,14 @@ function Sampler(M::StochasticModel{<:SEIR})  #0=S  1=E  2=I  3=R
         empty!(Q)
         s .= 0
         flag = 0
-        while flag == 0
-            empty!(Q)
-            for i = 1:N
-                ind = individual(M, i)
-                updateQ!(i, rand() < ind.pseed ? zero(M.T) : delay(ind.autoinf, zero(M.T)))
-            end
-            flag = sum([Q[i] == zero(M.T) for i=1:N])
-        end 
+        Z1 = prod(1 - individual(M,i).pseed for i = 1:N)
+        for i = 1:N
+            ind = individual(M, i)
+            eff_seed = (flag == 0 ? ind.pseed / (1-Z1) : ind.pseed)
+            updateQ!(i, rand() < eff_seed ? zero(M.T) : delay(ind.autoinf, zero(M.T)))
+            Z1 /= (1-ind.pseed)
+            flag += (Q[i] == zero(M.T))
+        end        
         while !isempty(Q)
             i, t = pop!(Q)
             s[i] += 1
