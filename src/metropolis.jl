@@ -14,6 +14,11 @@ struct GaussMove{T<:AbstractFloat}
     r::T
 end
 
+struct RectifiedGaussMove{T<:AbstractFloat}
+    δ::T # for the moment, support in -Inf, Inf and clamping in 0,T
+end
+
+
 UniformMove(δ) = UniformMove(δ,-Inf,Inf)
 GaussMove(δ) = GaussMove(δ,-Inf,Inf)
 
@@ -24,11 +29,29 @@ function propose_move!(K::UniformMove,x,xnew,i,Mp)
 end
 
 function propose_move!(K::GaussMove,x,xnew,i,Mp)
-    xnew[i] = clamp(rand(TruncatedNormal(x[i],K.δ^2,K.l,K.r)),0.0,Mp.T)
+    xnew[i] = clamp(rand(TruncatedNormal(x[i],K.δ,K.l,K.r)),0.0,Mp.T)
 end
 
-logdensity(K::UniformMove,μ,x) = logpdf(Uniform(max(K.l,μ-K.δ), min(μ+K.δ,K.r)),x)
-logdensity(K::GaussMove,μ,x) = logpdf(TruncatedNormal(μ,K.δ^2,K.l,K.r),x)
+
+function propose_move!(K::RectifiedGaussMove,x,xnew,i,Mp)
+    xnew[i] = clamp(rand(Normal(x[i],K.δ)),0.0,Mp.T)
+end
+
+
+logdensity(K::UniformMove,μ,x,Mp) = logpdf(Uniform(max(K.l,μ-K.δ), min(μ+K.δ,K.r)),x)
+logdensity(K::GaussMove,μ,x,Mp) = logpdf(TruncatedNormal(μ,K.δ,K.l,K.r),x)
+
+function logdensity(K::RectifiedGaussMove,μ,x,Mp)
+    # what if I have to compute the ratio between an integral and a density?
+    if x==0 # integral from -infty to 0
+        return logcdf( Normal(μ,K.δ) , 0.0 )
+    elseif x==Mp.T
+        return log(1.0 - cdf(Normal(μ,K.δ),Mp.T))
+    else
+        return logpdf(Normal(μ,K.δ),x)
+    end
+end
+
 
 function ΔE(x,xnew,i,Mp,O)
     s = (logQi(Mp,i,individual(Mp,i),x) + logO(x, O, Mp)) - (logO(xnew, O, Mp) + logQi(Mp,i,individual(Mp,i),xnew))
@@ -44,7 +67,7 @@ function initial_condition(Mp,O;x0type=:post)
     x0type==:rand && return rand(nv(Mp.G))*Mp.T
 end
 
-function metropolis_hasting_mc(Mp, O, K; numsteps=10^3,x = prior(Mp,numsamples = 1)[:],hr=true)
+function metropolis_hasting_mc(Mp, O, K; numsteps=10^3,x = prior(Mp,numsamples = 1)[:],hr=true) #deprecated for now
     
     N = nv(Mp.G)
     T = Mp.T
@@ -55,7 +78,7 @@ function metropolis_hasting_mc(Mp, O, K; numsteps=10^3,x = prior(Mp,numsamples =
         xnew = copy(x)
         i = rand(1:N)
         propose_move!(K,x,xnew,i,Mp)
-        if rand() < exp(-ΔE(x,xnew,i,Mp,O) + (logdensity(K,xnew[i],x[i]) - logdensity(K,x[i],xnew[i]))*hr )
+        if rand() < exp(-ΔE(x,xnew,i,Mp,O) + (logdensity(K,xnew[i],x[i],Mp) - logdensity(K,x[i],xnew[i]),Mp)*hr )
             x = copy(xnew)
             acc_ratio+=1
         end
@@ -63,7 +86,29 @@ function metropolis_hasting_mc(Mp, O, K; numsteps=10^3,x = prior(Mp,numsamples =
     xnew, acc_ratio/numsteps
 end
 
-function metropolis_sampling_parallel(Mp, O, K; numsamples = 10^3,numsteps=10^3,hastingratio=true,x0type=:prior)
+
+function metropolis_hasting_fullswipe(Mp, O, K; x = prior(Mp,numsamples = 1)[:],hr=true)
+    
+    N = nv(Mp.G)
+    T = Mp.T
+    xnew = similar(x)
+    acc_ratio = 0.0
+    xnew = copy(x)
+    for i in randperm(N)
+        propose_move!(K,x,xnew,i,Mp)
+        if rand() < exp(-ΔE(x,xnew,i,Mp,O) + (logdensity(K,xnew[i],x[i],Mp) - logdensity(K,x[i],xnew[i],Mp))*hr )
+            x[i] = xnew[i]
+            acc_ratio+=1
+        else
+            xnew[i] = x[i]
+        end
+    end
+    xnew, acc_ratio/N
+end
+
+
+
+function metropolis_sampling_parallel(Mp, O, K; numsamples = 10^3,numsteps=10^3,hastingratio=true,x0type=:prior) #deprecated
 
     N = nv(Mp.G)
     nt = Threads.nthreads()
@@ -89,7 +134,7 @@ function metropolis_sampling_parallel(Mp, O, K; numsamples = 10^3,numsteps=10^3,
 end
 
 
-function metropolis_sampling_sequential(Mp, O, K; numsamples = 10^3,numsteps=10^3,nfirst = 10^3, x = prior(Mp,numsamples = 1)[:],hastingratio=true)
+function metropolis_sampling_sequential(Mp, O, K; numsamples = 10^3,numsteps=10,nfirst = 10^3, x = prior(Mp,numsamples = 1)[:],hastingratio=true)
 
     n_states(Mp)!=2 && @error "only working for SI "
     
@@ -97,15 +142,22 @@ function metropolis_sampling_sequential(Mp, O, K; numsamples = 10^3,numsteps=10^
     stats = zeros(numsamples,N)
     pr = Progress(numsamples)
 
-    x,~ = metropolis_hasting_mc(Mp,O,K;numsteps = nfirst,x = x)
+    for _ = 1:nfirst
+        x,~ = metropolis_hasting_fullswipe(Mp,O,K;x = x,hr = hastingratio)
+    end
 
+    #start collecting samples
+    acc_ratio = -1.0
+    
     for m = 1:numsamples
-        x, acc_ratio = metropolis_hasting_mc(Mp,O,K;numsteps = numsteps,x = x,hr = hastingratio)
-        stats[m,:]  = x
+        for _= 1:numsteps
+            x, acc_ratio = metropolis_hasting_fullswipe(Mp,O,K;x = x,hr = hastingratio)
+        end
+        stats[m,:]  = copy(x)
         ProgressMeter.next!(pr,showvalues=[(:acc_ratio,acc_ratio)] )
     end
     
-    stats
+    return stats
 end
 
 
