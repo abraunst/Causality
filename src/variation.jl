@@ -62,9 +62,9 @@ function descend!(Mp, O; M = copy(Mp),
             sample!(x)
             F1 = logQcorr(x, M) - logQ(x, Mp) 
             gradient!(dθ[ti], x, M)
-            avF[ti] += (F1 - logO(x, O, Mp)) / numsamples
+            F = (F1 - logO(x, O, Mp)) / numsamples
+            avF[ti] += F
             for i = 1:N
-                F = (F1 - logO(x, O, Mp)) / numsamples
                 Dθ[ti][:,i] .+= F .* dθ[ti][:,i] 
                 Dθ[ti][1,i] -= F * b/(1 - individual(M,i).pseed)
             end
