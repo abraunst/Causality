@@ -47,7 +47,7 @@ function descend!(Mp, O; M = copy(Mp),
     pr = Progress(numiters)
     θ = M.θ
     θgen = M.θgen
-    @show Threads.nthreads()
+    #@show Threads.nthreads()
     for t = 1:numiters
         for ti=1:nt
             Dθ[ti] .= 0.0
@@ -68,7 +68,6 @@ function descend!(Mp, O; M = copy(Mp),
                 Dθ[ti][:,i] .+= F .* dθ[ti][:,i] 
                 Dθ[ti][1,i] -= F * b/(1 - individual(M,i).pseed)
             end
-            F = F1 - logO(x, O, Mp)
             ForwardDiff.gradient!(dθgen[ti], th->logQgen(x, M, th), θgen)
             Dθgen[ti] .+= (F .* dθgen[ti] .- ForwardDiff.gradient(th -> logQgen(x, Mp, th), θgen))       
         end
@@ -127,14 +126,15 @@ function localdescend!(Mp, O; M = copy(Mp),
             ti = Threads.threadid()
             x, sample! = X[ti], S![ti]
             sample!(x)
-            F = logQ(x, M) - logQ(x, Mp) - logO(x, O, Mp)
+            logobs = logO(x, O, Mp) / numsamples
+            F = (logQ(x, M) - logQ(x, Mp)) / numsamples - logobs
             gradient!(dθ[ti], x, M)
-            avF[ti] += F / numsamples
+            avF[ti] += F 
             for i = 1:N
-               Floc[i] = (logQi(M, i, individual(M,i), x) - logQi(Mp, i, individual(Mp,i), x) - logO(x, Obs[i], Mp)) / numsamples 
+               Floc[i] = (logQi(M, i, individual(M,i), x) - logQi(Mp, i, individual(Mp,i), x) ) / numsamples 
             end
             for i = 1:N
-                Fi = Floc[i] + sum([Floc[j] for (j,rji) ∈ in_neighbors(M, i)])
+                Fi = (Floc[i] + sum([Floc[j] for (j,rij) ∈ in_neighbors(M,i)]) - logobs) 
                 Dθ[ti][:,i] .+= Fi .* dθ[ti][:,i]
                 Dθ[ti][1,i] -= Fi * b/(1 - individual(M,i).pseed)
             end
