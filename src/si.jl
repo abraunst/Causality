@@ -63,7 +63,6 @@ function Sampler(M::StochasticModel{<:SI})
             ind = individual(M, i)
             eff_seed = (flag == 0 ? ind.pseed / (1-Z1) : ind.pseed)
             Q[i] = min(M.T, rand() < eff_seed ? zero(M.T) : delay(ind.autoinf, zero(M.T)))
-            @show Z1
             Z1 /= (1-ind.pseed)
             flag += (Q[i] == zero(M.T)) #if i is a zero patient the flag is no more 0
         end           

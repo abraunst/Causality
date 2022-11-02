@@ -122,19 +122,21 @@ function localdescend!(Mp, O; M = copy(Mp),
         end
         a = prod([1 - individual(M,i).pseed for i = 1:N])
         b = a / (1-a)
+        logcorr = log(1-a) / numsamples
         Threads.@threads for s = 1:numsamples
             ti = Threads.threadid()
             x, sample! = X[ti], S![ti]
             sample!(x)
             logobs = logO(x, O, Mp) / numsamples
-            F = (logQ(x, M) - logQ(x, Mp)) / numsamples - logobs
+            F = (logQcorr(x, M) - logQ(x, Mp)) / numsamples - logobs
             gradient!(dθ[ti], x, M)
             avF[ti] += F 
             for i = 1:N
                Floc[i] = (logQi(M, i, individual(M,i), x) - logQi(Mp, i, individual(Mp,i), x) ) / numsamples 
             end
             for i = 1:N
-                Fi = (Floc[i] + sum([Floc[j] for (j,rij) ∈ in_neighbors(M,i)]) - logobs) 
+                Fi = Floc[i]  - logobs - logcorr
+                #Fi = Floc[i]  - logO(x,Obs[i],Mp) / numsamples - logcorr
                 Dθ[ti][:,i] .+= Fi .* dθ[ti][:,i]
                 Dθ[ti][1,i] -= Fi * b/(1 - individual(M,i).pseed)
             end
@@ -154,6 +156,7 @@ function localdescend!(Mp, O; M = copy(Mp),
         θgen .= clamp.(θgen, θgenmin, θgenmax) 
         ProgressMeter.next!(pr, showvalues=[(:F,sum(avF))])
     end
+    #@show "ciao"
     sum(avF)
 end
 
