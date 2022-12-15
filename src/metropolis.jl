@@ -67,24 +67,6 @@ function initial_condition(Mp,O;x0type=:post)
     x0type==:rand && return rand(nv(Mp.G))*Mp.T
 end
 
-function metropolis_hasting_mc(Mp, O, K; numsteps=10^3,x = prior(Mp,numsamples = 1)[:],hr=true) #deprecated for now
-    
-    N = nv(Mp.G)
-    T = Mp.T
-    xnew = similar(x)
-    acc_ratio = 0.0
-    for m=1:numsteps
-
-        xnew = copy(x)
-        i = rand(1:N)
-        propose_move!(K,x,xnew,i,Mp)
-        if rand() < exp(-ΔE(x,xnew,i,Mp,O) + (logdensity(K,xnew[i],x[i],Mp) - logdensity(K,x[i],xnew[i]),Mp)*hr )
-            x = copy(xnew)
-            acc_ratio+=1
-        end
-    end
-    xnew, acc_ratio/numsteps
-end
 
 
 function metropolis_hasting_fullswipe(Mp, O, K; x = prior(Mp,numsamples = 1)[:],hr=true)
@@ -106,32 +88,28 @@ function metropolis_hasting_fullswipe(Mp, O, K; x = prior(Mp,numsamples = 1)[:],
     xnew, acc_ratio/N
 end
 
-
-
-function metropolis_sampling_parallel(Mp, O, K; numsamples = 10^3,numsteps=10^3,hastingratio=true,x0type=:prior) #deprecated
-
-    N = nv(Mp.G)
-    nt = Threads.nthreads()
-    stats = [Vector{Float64}(undef,0) for t=1:nt]
-
-    pr = Progress(numsamples)
-
-    ProgressMeter.update!(pr,0)
-    jj = Threads.Atomic{Int}(0)
-    l = Threads.SpinLock()
-
-    Threads.@threads for m = 1:numsamples
-        ti = Threads.threadid()
-        append!(stats[ti],metropolis_hasting_mc(Mp,O,K;numsteps = numsteps,hr=hastingratio,x = initial_condition(Mp,O;x0type = x0type))[1])
-        
-        Threads.atomic_add!(jj, 1)
-        Threads.lock(l) #acc_vec = zeros(length(δvec),numsamples)
-        ProgressMeter.update!(pr, jj[])
-        Threads.unlock(l) 
-    end
+function metropolis_hasting_fullswipeZero(Mp, O, K, temperat; x = prior(Mp,numsamples = 1)[:],hr=true)
     
-    return collect(reshape(vcat(stats...),(N,numsamples))')
+    N = nv(Mp.G)
+    T = Mp.T
+    xnew = similar(x)
+    acc_ratio = 0.0
+    xnew = copy(x)
+    for i in randperm(N)
+        propose_move!(K,x,xnew,i,Mp)
+        pacc = exp(-ΔE(x,xnew,i,Mp,O) + (logdensity(K,xnew[i],x[i],Mp) - logdensity(K,x[i],xnew[i],Mp))*hr )
+        pr = (pacc >= 1 ? pacc : pacc/temperat)
+        if rand() < pr
+            x[i] = xnew[i]
+            acc_ratio+=1
+        else
+            xnew[i] = x[i]
+        end
+    end
+    xnew, acc_ratio/N
 end
+
+
 
 
 function metropolis_sampling_sequential(Mp, O, K; numsamples = 10^3,numsteps=10,nfirst = 10^3, x = prior(Mp,numsamples = 1)[:],hastingratio=true)
@@ -152,6 +130,32 @@ function metropolis_sampling_sequential(Mp, O, K; numsamples = 10^3,numsteps=10,
     for m = 1:numsamples
         for _= 1:numsteps
             x, acc_ratio = metropolis_hasting_fullswipe(Mp,O,K;x = x,hr = hastingratio)
+        end
+        stats[m,:]  = copy(x)
+        ProgressMeter.next!(pr,showvalues=[(:acc_ratio,acc_ratio)] )
+    end
+    
+    return stats
+end
+
+function metropolis_sampling_sequentialZero(Mp, O, K; numsamples = 10^3,numsteps=10,nfirst = 10^3, x = prior(Mp,numsamples = 1)[:],hastingratio=true)
+
+    n_states(Mp)!=2 && @error "only working for SI "
+    
+    N = nv(Mp.G)
+    stats = zeros(numsamples,N)
+    pr = Progress(numsamples)
+
+    for _ = 1:nfirst
+        x,~ = metropolis_hasting_fullswipe(Mp,O,K;x = x,hr = hastingratio)
+    end
+
+    #start collecting samples
+    acc_ratio = -1.0
+    
+    for m = 1:numsamples
+        for st= 1:numsteps
+            x, acc_ratio = metropolis_hasting_fullswipeZero(Mp,O,K,st*10;x = x,hr = hastingratio)
         end
         stats[m,:]  = copy(x)
         ProgressMeter.next!(pr,showvalues=[(:acc_ratio,acc_ratio)] )
