@@ -2,33 +2,69 @@ using SpecialFunctions, IntervalUnionArithmetic
 
 export ConstantRate, GaussianRate, MaskedRate, UnitRate
 
-
+"""
+`RateContinuous`\n
+Abstract type for any continuous rate. \n
+See `GaussianRate`, `ConstantRate`, `MaskedRate`, `UnitRate`.
+"""
 abstract type RateContinuous end
 
+"""
+`nparams(::Type{R})`\n
+Returns the number of parameters of each rate.\n
+Example: `nparams(ConstantRate) = 1`\n
+See `GaussianRate`, `ConstantRate`, `UnitRate`.
+"""
 nparams(::Type{R}) where R = length(R.types)
 
 ####### GaussianRate
 
+"""
+`GaussianRate`\n
+Concrete type `GaussianRate(a,b,c)`. \n
+`a,b,c` must be of the same type and they represent respectively the peack, the mean and the std deviation of the gaussian. 
+"""
 struct GaussianRate{T} <: RateContinuous
     a::T
     b::T
     c::T
 end
 
+"""
+`density(g, t)`\n
+Returns the value of the function `g` at point `t`.\n
+`g` is a Rate
+"""
 function density(g::GaussianRate, t)
     a, b, c = g.a, g.b, g.c
     a*exp(-((t-b)/c)^2)
 end
 
+"""
+`logdensity(g, t)`\n
+Returns the value of the function `log(g)` at point `t`.\n
+`g` is a Rate
+"""
 logdensity(g::RateContinuous, t) = log(density(g, t))
 
 logdensity(g::GaussianRate, t) = -((t-g.b)/g.c)^2 + log(g.a)
 
+"""
+`cumulated(g, t)`\n
+Returns the cumulated function of `g` at point `t`\n
+`g` is a Rate.
+"""
 function cumulated(g::GaussianRate, t)
     a, b, c = g.a, g.b, g.c
     a*c*0.5*sqrt(π)*(erfc(-(t-b)/c)-erfc(b/c))
 end
 
+"""
+`delay(g, tj)`\n
+Returns a random value extracted from the rate `g` starting from value `tj`.\n
+This means that 
+
+"""
 function delay(g::GaussianRate, tj)
     a, b, c = g.a, g.b, g.c
     y=2/(a*c*sqrt(π))*(cumulated(g, tj) - log(rand())) + erfc(b/c);
@@ -47,6 +83,13 @@ function Base.:*(g1::GaussianRate, g2::GaussianRate)
     GaussianRate(peak,avg,sqrt(var))
 end
 
+"""
+`RateContinuous`\n
+Constructor for concrete type `AdamDescender{T}` \n
+`w` is the parameter vector to update. \n
+`η` is the desired learning rate. \n
+See `step!`.
+"""
 shift(g::GaussianRate, tj) = GaussianRate(g.a,g.b+tj,g.c)
 
 nparams(::Type{GaussianRate}) = 3
@@ -54,6 +97,13 @@ nparams(::Type{GaussianRate}) = 3
 
 #### ConstantRate
 
+"""
+`RateContinuous`\n
+Constructor for concrete type `AdamDescender{T}` \n
+`w` is the parameter vector to update. \n
+`η` is the desired learning rate. \n
+See `step!`.
+"""
 struct ConstantRate{T} <: RateContinuous
     c::T
 end
@@ -70,6 +120,13 @@ nparams(::Type{ConstantRate}) = 1
 
 #### MaskedRate
 
+"""
+`RateContinuous`\n
+Constructor for concrete type `AdamDescender{T}` \n
+`w` is the parameter vector to update. \n
+`η` is the desired learning rate. \n
+See `step!`.
+"""
 struct MaskedRate{R} <: RateContinuous
     rate::R
     mask::IntervalUnion{Float64}
@@ -111,6 +168,13 @@ nparams(::Type{MaskedRate{R}}) where R = nparams(R)
 
 ####### UnitRate
 
+"""
+`RateContinuous`\n
+Constructor for concrete type `AdamDescender{T}` \n
+`w` is the parameter vector to update. \n
+`η` is the desired learning rate. \n
+See `step!`.
+"""
 struct UnitRate <: RateContinuous end
 
 cumulated(::UnitRate, Δt) = Δt
@@ -127,6 +191,13 @@ nparams(::Type{UnitRate}) = 0
 nparams(::Type{<: GaussianRate}) = 3
 nparams(::Type{<: ConstantRate}) = 1
 
+"""
+`RateContinuous`\n
+Constructor for concrete type `AdamDescender{T}` \n
+`w` is the parameter vector to update. \n
+`η` is the desired learning rate. \n
+See `step!`.
+"""
 struct StepRate{R, T} <: RateContinuous
     rate::R
     center::T

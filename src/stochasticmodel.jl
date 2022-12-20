@@ -2,7 +2,11 @@ using SparseArrays, IndexedGraphs
 
 export StochasticModel
 
+"""
+`StochasticModel{I,GT,VT}` 
 
+
+"""
 struct StochasticModel{I,GT,VT}
     T::Float64
     θ::Matrix{Float64}
@@ -12,6 +16,7 @@ struct StochasticModel{I,GT,VT}
 end
 
 StochasticModel(::Type{I}, T, θ, G::GT, θgen, V::VT = fill(UnitRate(), ne(G))) where {I,GT,VT} = StochasticModel{I,GT,VT}(T,θ,G,θgen,V)
+
 
 macro individual(x)
     D = Dict()
@@ -48,7 +53,24 @@ macro individual(x)
     :(individual(::Type{$J}, $θ1, $θ2) where {$(types...)} = @views $I($(v...)))
 end
 
+"""
+`individual(M::StochasticModel{I}, i::Int, θi = @view(M.θ[:,i]), θgen = M.θgen) where {I} = individual(I, θi, θgen)` \n
+Returns the individual associated to label i. 
+"""
 individual(M::StochasticModel{I}, i::Int, θi = @view(M.θ[:,i]), θgen = M.θgen) where {I} = individual(I, θi, θgen)
 
+"""
+`in_neighbors(M::StochasticModel, i::Int)` \n
+Returns the label of all the individuals linked to i. \n
+This is the toal numbers of neighbours of i in an undirected graph.\n
+See also `out_neighbors`. 
+"""
 in_neighbors(M::StochasticModel, i::Int) = ((e.src, M.V[e.idx]) for e ∈ inedges(M.G, i))
+
+"""
+`out_neighbors(M::StochasticModel, i::Int)` \n
+Returns the label of all the individuals which i is linked to. \n
+This is the toal numbers of neighbours of i in an undirected graph. \n
+see also `in_neighbors`. 
+"""
 out_neighbors(M::StochasticModel, i::Int) = ((e.dst, M.V[e.idx]) for e ∈ outedges(M.G, i))
