@@ -59,10 +59,9 @@ function descend!(Mp, O; M = copy(Mp),
         Threads.@threads for s = 1:numsamples
             ti = Threads.threadid()
             x, sample! = X[ti], S![ti]
-            sample!(x)
-            F1 = logQcorr(x, M) - logQ(x, Mp) 
+            sample!(x)  
             gradient!(dθ[ti], x, M)
-            F = (F1 - logO(x, O, Mp)) / numsamples
+            F = (logQcorr(x, M) - logQ(x, Mp) - logO(x, O, Mp)) / numsamples
             avF[ti] += F
             for i = 1:N
                 Dθ[ti][:,i] .+= F .* dθ[ti][:,i] 
@@ -86,8 +85,6 @@ function descend!(Mp, O; M = copy(Mp),
     end
     sum(avF)
 end
-
-
 
 function gradient!(dθ, x, M::StochasticModel)
     for i=1:size(dθ, 2)
