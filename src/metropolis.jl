@@ -86,8 +86,7 @@ function metropolis_hasting(Mp, O, K; x = prior(Mp,numsamples = 1)[:],hr=true)
     for i in randperm(N)
         propose_move!(K,x,xnew,i,Mp)
         pacc = exp(-ΔE(x,xnew,i,Mp,O) + (logdensity(K,xnew[i],x[i],Mp) - logdensity(K,x[i],xnew[i],Mp))*hr )
-        pr = (pacc >= 1 ? pacc : pacc/temperat)
-        if rand() < pr
+        if rand() < pacc
             x[i] = xnew[i]
             acc_ratio+=1
         else
