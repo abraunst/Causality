@@ -108,6 +108,7 @@ function newdescend!(Mp, O; M = copy(Mp),
     Dθgen = [zero(M.θgen) for ti=1:nt]
     Obs = [[o for o in O if o[1] == i ] for i = 1:N]  #observations grouped for particle number
     avF = zeros(nt)
+    averageF = 0.0
     S! = [Sampler(M) for i=1:nt]
     pr = Progress(numiters)
     θ = M.θ
@@ -157,7 +158,7 @@ function newdescend!(Mp, O; M = copy(Mp),
         θgen .= clamp.(θgen, θgenmin, θgenmax) 
         ProgressMeter.next!(pr, showvalues=[(:F,averageF)])
     end
-    sum(avF)
+    return averageF
 end
 
 
