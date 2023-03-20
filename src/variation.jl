@@ -21,7 +21,7 @@ function logQgen(x, M::StochasticModel, θgen)
 end
 
 
-function newdescend!(Mp, O; M = copy(Mp),
+function descend!(Mp, O; M = copy(Mp),
         numiters = 200, numsamples = 1000, ε = 1e-10,
         descender = AdamDescender(M.θ, 1e-3),
         hyperdescender = AdamDescender(M.θgen, 1e-3),
