@@ -1,4 +1,4 @@
-# Causality
+# Causality (Causal Variational Approach, CVA)
 
 This is the repository for Causal Variational Approach (CVA) method.
 
